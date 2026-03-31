@@ -13,8 +13,14 @@ struct HomeNestApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            StorageLocation.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        // Configure for CloudKit sync with proper settings
+        let modelConfiguration = ModelConfiguration(
+            schema: schema, 
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: .automatic
+        )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

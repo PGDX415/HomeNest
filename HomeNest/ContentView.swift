@@ -9,53 +9,51 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @State private var selectedTab = 0
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        TabView(selection: $selectedTab) {
+            // Dashboard Tab
+            NavigationStack {
+                DashboardView()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            .tabItem {
+                Label("首页", systemImage: "house.fill")
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            .tag(0)
+            
+            // Locations Tab
+            NavigationStack {
+                LocationsView()
             }
+            .tabItem {
+                Label("位置", systemImage: "folder.fill")
+            }
+            .tag(1)
+            
+            // Items Tab
+            NavigationStack {
+                ItemsView()
+            }
+            .tabItem {
+                Label("物品", systemImage: "list.bullet.rectangle")
+            }
+            .tag(2)
+            
+            // Profile Tab
+            NavigationStack {
+                Text("Profile View - 我的")
+                    .navigationTitle("我")
+            }
+            .tabItem {
+                Label("我", systemImage: "person.fill")
+            }
+            .tag(3)
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [Item.self, StorageLocation.self], inMemory: true)
 }
