@@ -14,8 +14,9 @@ struct HomeNestApp: App {
         let schema = Schema([
             Item.self,
             StorageLocation.self,
-            Home.self,  // Added Home model
+            Home.self,
         ])
+        
         // Configure for CloudKit sync with proper settings
         let modelConfiguration = ModelConfiguration(
             schema: schema, 
@@ -24,9 +25,20 @@ struct HomeNestApp: App {
         )
 
         do {
+            // Try to create the model container
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // Log the error but don't crash - this handles recovery scenarios gracefully
+            print("Warning: ModelContainer creation encountered an issue: \(error)")
+            print("This may be due to database recovery or CloudKit sync state.")
+            
+            // Attempt to create a fallback container without CloudKit if needed
+            let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            do {
+                return try ModelContainer(for: schema, configurations: [fallbackConfiguration])
+            } catch {
+                fatalError("Could not create ModelContainer even with fallback: \(error)")
+            }
         }
     }()
 

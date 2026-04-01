@@ -9,7 +9,10 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var selectedTab = 1 // Changed default to 统计 tab
+    @Environment(\.modelContext) private var modelContext
+    @Query private var allHomes: [Home]
+    
+    @State private var selectedTab = 1 // Default to 统计 tab as per specification
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -22,7 +25,7 @@ struct ContentView: View {
             }
             .tag(0)
             
-            // Dashboard Tab - Updated to "统计" for better clarity
+            // Dashboard Tab - Statistics overview as default landing page
             NavigationStack {
                 DashboardView()
             }
@@ -49,6 +52,12 @@ struct ContentView: View {
                 Label("我", systemImage: "person.fill")
             }
             .tag(3)
+        }
+        .onChange(of: allHomes.count) { newCount in
+            // 当添加第一个场所时，自动切换到场所标签页
+            if newCount > 0 && selectedTab == 1 {
+                selectedTab = 0
+            }
         }
     }
 }

@@ -3,6 +3,81 @@ import SwiftData
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var allHomes: [Home]
+    @Query private var allItems: [Item]
+    
+    var body: some View {
+        if allHomes.isEmpty {
+            // 没有场所时显示引导页面
+            EmptyDashboardView()
+        } else {
+            // 有场所时显示统计信息
+            StatisticsDashboardView()
+        }
+    }
+}
+
+// 空状态引导页面
+struct EmptyDashboardView: View {
+    @Environment(\.modelContext) private var modelContext
+    @State private var showingAddPlaceSheet = false
+    
+    var body: some View {
+        VStack(spacing: 30) {
+            Spacer()
+            
+            Image(systemName: "house.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.secondary)
+                .padding()
+                .background(
+                    Circle()
+                        .fill(Color.secondary.opacity(0.1))
+                )
+            
+            Text("欢迎使用家物管")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+            
+            Text("您还没有添加任何场所。\n开始管理您的家庭物品吧！")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Button(action: {
+                showingAddPlaceSheet = true
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                    Text("添加第一个场所")
+                        .font(.headline)
+                }
+                .padding(.horizontal, 30)
+                .padding(.vertical, 12)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .sheet(isPresented: $showingAddPlaceSheet) {
+            AddPlaceSheet { newPlace in
+                // Set as primary if this is the first place
+                newPlace.isPrimary = true
+                modelContext.insert(newPlace)
+            }
+        }
+    }
+}
+
+// 统计信息页面
+struct StatisticsDashboardView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query private var allItems: [Item]
     @Query private var allLocations: [StorageLocation]
     
@@ -34,75 +109,55 @@ struct DashboardView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Statistics cards
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 16) {
-                    // Total Items Card
-                    DashboardCard(
-                        title: "物品总数",
-                        value: "\(allItems.count)",
-                        icon: "list.bullet.rectangle",
-                        color: .blue
-                    )
-                    
-                    // Total Locations Card
-                    DashboardCard(
-                        title: "位置总数",
-                        value: "\(allLocations.count)",
-                        icon: "folder.fill",
-                        color: .green
-                    )
-                    
-                    // Total Value Card
-                    DashboardCard(
-                        title: "总价值",
-                        value: "¥\(String(format: "%.0f", totalValue))",
-                        icon: "dollarsign.circle",
-                        color: .orange
-                    )
-                    
-                    // Expiring Soon Card
-                    DashboardCard(
-                        title: "即将过期",
-                        value: "\(expiringSoonItems.count)",
-                        icon: "clock.arrow.circlepath",
-                        color: .red
-                    )
+            VStack(spacing: 20) {
+                // 标题
+                Text("统计概览")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.top)
+                
+                // 数据卡片
+                VStack(spacing: 15) {
+                    DashboardCard(title: "位置总数", count: allLocations.count, icon: "folder.fill", color: .green)
+                    DashboardCard(title: "物品总数", count: allItems.count, icon: "list.bullet.rectangle", color: .blue)
+                    DashboardCard(title: "总价值", countText: "¥\(String(format: "%.0f", totalValue))", icon: "dollarsign.circle", color: .orange)
+                    DashboardCard(title: "即将过期", count: expiringSoonItems.count, icon: "clock.arrow.circlepath", color: .red)
                 }
                 .padding(.horizontal)
                 
-                // Recent Items Section
+                // 最近添加的物品
                 if !recentItems.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("最近添加")
-                                .font(.title2)
-                                .fontWeight(.bold)
+                                .font(.headline)
                             
                             Spacer()
                             
                             NavigationLink("查看全部") {
                                 ItemsView()
                             }
+                            .font(.caption)
                         }
+                        .padding(.horizontal)
                         
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
-                            ForEach(recentItems, id: \.persistentModelID) { item in
-                                NavigationLink(destination: ItemDetailView(item: item)) {
-                                    RecentItemCard(item: item)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 15) {
+                                ForEach(recentItems, id: \.persistentModelID) { item in
+                                    NavigationLink(destination: ItemDetailView(item: item)) {
+                                        RecentItemCard(item: item)
+                                    }
                                 }
                             }
+                            .padding(.horizontal)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.top)
                 }
                 
                 Spacer()
             }
-            .padding(.top, 8)
+            .padding(.bottom)
         }
         .navigationTitle("家物管")
         .toolbar {
@@ -138,68 +193,80 @@ struct DashboardView: View {
     }
 }
 
-// Dashboard statistics card
+// 数据卡片组件
 struct DashboardCard: View {
     let title: String
-    let value: String
+    var count: Int = 0
+    var countText: String = ""
     let icon: String
     let color: Color
     
+    var displayCount: String {
+        if !countText.isEmpty {
+            return countText
+        }
+        return "\(count)"
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
+        HStack {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(color.opacity(0.1))
+                )
+            
+            VStack(alignment: .leading) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text(displayCount)
                     .font(.title2)
+                    .fontWeight(.bold)
                     .foregroundColor(color)
-                Spacer()
             }
             
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Spacer()
         }
         .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        )
     }
 }
 
-// Recent item card for grid display
+// 最近物品卡片
 struct RecentItemCard: View {
     let item: Item
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Photo or placeholder
             if let photoData = item.photoData,
                let uiImage = UIImage(data: photoData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(height: 100)
+                    .frame(width: 100, height: 100)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
-                Rectangle()
-                    .fill(Color.secondary.opacity(0.1))
-                    .frame(height: 100)
-                    .overlay {
-                        Image(systemName: "photo")
-                            .foregroundColor(.secondary)
-                    }
-                    .cornerRadius(12)
+                Image(systemName: "photo")
+                    .frame(width: 100, height: 100)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             
-            // Item name
             Text(item.name)
-                .lineLimit(2)
                 .font(.subheadline)
                 .fontWeight(.medium)
+                .lineLimit(2)
+                .foregroundColor(.primary)
             
-            // Location or category
             HStack {
                 if let location = item.location {
                     Text(location.name)
@@ -213,20 +280,18 @@ struct RecentItemCard: View {
                 
                 Spacer()
                 
-                // Quantity
                 Text("x\(item.quantity)")
                     .font(.caption2)
                     .fontWeight(.medium)
             }
         }
-        .padding(8)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .frame(width: 120)
     }
 }
 
 #Preview {
-    DashboardView()
-        .modelContainer(for: [Item.self, StorageLocation.self], inMemory: true)
+    NavigationStack {
+        DashboardView()
+    }
+    .modelContainer(for: [Item.self, StorageLocation.self], inMemory: true)
 }
