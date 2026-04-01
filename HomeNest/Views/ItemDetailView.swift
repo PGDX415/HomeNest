@@ -18,8 +18,8 @@ struct ItemDetailView: View {
                    let uiImage = UIImage(data: photoData) {
                     Image(uiImage: uiImage)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 300)
+                        .aspectRatio(contentMode: .fit)  // Changed from .fill to .fit
+                        .frame(maxWidth: .infinity, maxHeight: 300)  // Use maxWidth instead of fixed height
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
                 
