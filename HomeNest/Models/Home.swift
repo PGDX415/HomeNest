@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 // 家庭/场所模型
 @Model
@@ -14,6 +15,7 @@ final class Home {
     var name: String            // 家庭名称，如"主住宅"、"度假屋"、"办公室"
     var address: String?        // 地址（可选）
     var icon: String?           // 图标（SF Symbols 或 emoji）
+    var iconColor: String?      // 图标颜色名称（"primary", "blue", "green", "orange", "red", "purple", "indigo", "teal", "gray"）
     var isPrimary: Bool = false // 是否为主家庭
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
@@ -21,11 +23,40 @@ final class Home {
     @Relationship(deleteRule: .cascade)
     var locations: [StorageLocation] = []
     
-    init(name: String, address: String? = nil, icon: String? = nil, isPrimary: Bool = false) {
+    init(name: String, address: String? = nil, icon: String? = nil, iconColor: String? = nil, isPrimary: Bool = false) {
         self.name = name
         self.address = address
         self.icon = icon
+        self.iconColor = iconColor
         self.isPrimary = isPrimary
+    }
+    
+    // 将颜色名称转换为实际 Color
+    func getIconColor() -> Color {
+        guard let colorName = iconColor else {
+            return .primary
+        }
+        
+        switch colorName {
+        case "blue":
+            return .blue
+        case "green":
+            return .green
+        case "orange":
+            return .orange
+        case "red":
+            return .red
+        case "purple":
+            return .purple
+        case "indigo":
+            return .indigo
+        case "teal":
+            return .teal
+        case "gray":
+            return .gray
+        default:
+            return .primary
+        }
     }
     
     // 计算场所的总物品数量（包括所有子位置的物品）

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
 // 位置类型枚举
 enum LocationType: String, Codable, CaseIterable {
@@ -16,6 +17,7 @@ enum LocationType: String, Codable, CaseIterable {
 final class StorageLocation {
     var name: String
     var icon: String?               // SF Symbols 或 emoji（如 "🛋️"）
+    var iconColor: String?          // 图标颜色名称（"primary", "blue", "green", "orange", "red", "purple", "indigo", "teal", "gray"）
     var type: LocationType
     var parent: StorageLocation?    // 父位置（可选）
     var isFavorite: Bool = false    // 收藏/标记状态
@@ -29,13 +31,42 @@ final class StorageLocation {
     // 新增：关联到家庭
     var home: Home?
     
-    init(name: String, type: LocationType, parent: StorageLocation? = nil, home: Home? = nil, icon: String? = nil, isFavorite: Bool = false) {
+    init(name: String, type: LocationType, parent: StorageLocation? = nil, home: Home? = nil, icon: String? = nil, iconColor: String? = nil, isFavorite: Bool = false) {
         self.name = name
         self.type = type
         self.parent = parent
         self.home = home
         self.icon = icon
+        self.iconColor = iconColor
         self.isFavorite = isFavorite
+    }
+    
+    // 将颜色名称转换为实际 Color
+    func getIconColor() -> Color {
+        guard let colorName = iconColor else {
+            return .primary
+        }
+        
+        switch colorName {
+        case "blue":
+            return .blue
+        case "green":
+            return .green
+        case "orange":
+            return .orange
+        case "red":
+            return .red
+        case "purple":
+            return .purple
+        case "indigo":
+            return .indigo
+        case "teal":
+            return .teal
+        case "gray":
+            return .gray
+        default:
+            return .primary
+        }
     }
     
     // 计算位置的总物品数量（包括所有子位置的物品）
