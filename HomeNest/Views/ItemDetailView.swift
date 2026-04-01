@@ -158,19 +158,9 @@ struct ItemDetailView: View {
             }
         }
         .sheet(isPresented: $showingEditSheet) {
-            AddItemSheet(location: item.location) { updatedItem in
-                // Update existing item properties
-                item.name = updatedItem.name
-                item.quantity = updatedItem.quantity
-                item.details = updatedItem.details  // Updated to use 'details'
-                item.value = updatedItem.value
-                item.purchaseDate = updatedItem.purchaseDate
-                item.expiryDate = updatedItem.expiryDate
-                item.category = updatedItem.category
-                item.tags = updatedItem.tags
-                item.photoData = updatedItem.photoData
-                item.location = updatedItem.location
-                item.updatedAt = Date()
+            AddItemSheet(location: item.location, existingItem: item) { _ in
+                // No need to manually copy properties - AddItemSheet updates the existing item directly
+                // The item is automatically persisted by SwiftData
             }
         }
         .alert("确认删除", isPresented: $showingDeleteConfirmation) {

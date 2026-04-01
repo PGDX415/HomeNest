@@ -7,6 +7,7 @@ struct AddItemSheet: View {
     @Environment(\.modelContext) private var modelContext
     
     let location: StorageLocation?
+    let existingItem: Item?  // Added to support editing existing items
     let onSave: (Item) -> Void
     
     @State private var name = ""
@@ -24,6 +25,26 @@ struct AddItemSheet: View {
     
     // Predefined categories
     private let predefinedCategories = ["家电", "衣物", "书籍", "厨房", "食品", "工具", "装饰", "其他"]
+    
+    init(location: StorageLocation?, existingItem: Item? = nil, onSave: @escaping (Item) -> Void) {
+        self.location = location
+        self.existingItem = existingItem
+        self.onSave = onSave
+        
+        // Initialize state variables if editing an existing item
+        if let existingItem = existingItem {
+            _name = State(initialValue: existingItem.name)
+            _quantity = State(initialValue: existingItem.quantity)
+            _descriptionText = State(initialValue: existingItem.details ?? "")
+            _value = State(initialValue: existingItem.value)
+            _purchaseDate = State(initialValue: existingItem.purchaseDate)
+            _expiryDate = State(initialValue: existingItem.expiryDate)
+            _category = State(initialValue: existingItem.category ?? "")
+            _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
+            _photoData = State(initialValue: existingItem.photoData)
+            _selectedLocation = State(initialValue: existingItem.location)
+        }
+    }
     
     var body: some View {
         NavigationStack {
@@ -113,7 +134,7 @@ struct AddItemSheet: View {
                     }
                 }
             }
-            .navigationTitle("添加物品")
+            .navigationTitle(existingItem == nil ? "添加物品" : "编辑物品")  // Updated title based on mode
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -128,20 +149,39 @@ struct AddItemSheet: View {
                         
                         let tags = tagsText.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }
                         
-                        let newItem = Item(
-                            name: name,
-                            quantity: quantity,
-                            location: selectedLocation ?? location,
-                            details: descriptionText.isEmpty ? nil : descriptionText,  // Updated to use 'details'
-                            value: value,
-                            purchaseDate: purchaseDate,
-                            expiryDate: expiryDate,
-                            category: category.isEmpty ? nil : category,
-                            tags: tags,
-                            photoData: photoData
-                        )
-                        
-                        onSave(newItem)
+                        if let existingItem = existingItem {
+                            // Update existing item directly - no new item creation
+                            existingItem.name = name
+                            existingItem.quantity = quantity
+                            existingItem.details = descriptionText.isEmpty ? nil : descriptionText
+                            existingItem.value = value
+                            existingItem.purchaseDate = purchaseDate
+                            existingItem.expiryDate = expiryDate
+                            existingItem.category = category.isEmpty ? nil : category
+                            existingItem.tags = tags
+                            existingItem.photoData = photoData
+                            existingItem.location = selectedLocation ?? location
+                            existingItem.updatedAt = Date()
+                            
+                            // Call onSave with the existing (now updated) item
+                            onSave(existingItem)
+                        } else {
+                            // Create new item for add mode
+                            let newItem = Item(
+                                name: name,
+                                quantity: quantity,
+                                location: selectedLocation ?? location,
+                                details: descriptionText.isEmpty ? nil : descriptionText,
+                                value: value,
+                                purchaseDate: purchaseDate,
+                                expiryDate: expiryDate,
+                                category: category.isEmpty ? nil : category,
+                                tags: tags,
+                                photoData: photoData
+                            )
+                            
+                            onSave(newItem)
+                        }
                         dismiss()
                     }
                     .disabled(name.isEmpty)
