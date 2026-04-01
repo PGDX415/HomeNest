@@ -4,6 +4,7 @@ import SwiftData
 struct ItemsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
+    @Query private var homes: [Home] // Added to get all homes for grouping
     
     @State private var showingAddItemSheet = false
     @State private var searchText = ""
@@ -13,6 +14,7 @@ struct ItemsView: View {
     init() {
         // Default query for all items sorted by name
         _items = Query(sort: \Item.name)
+        _homes = Query(sort: \Home.name) // Added query for homes
     }
     
     // Filtered items based on search and filters
@@ -27,7 +29,8 @@ struct ItemsView: View {
                 item.tags.contains { tag in
                     tag.localizedCaseInsensitiveContains(searchText)
                 } ||
-                (item.location?.name.localizedCaseInsensitiveContains(searchText) ?? false)
+                (item.location?.name.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (item.location?.home?.name.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
         
@@ -51,6 +54,28 @@ struct ItemsView: View {
         return filtered
     }
     
+    // Group items by home
+    var itemsByHome: [(home: Home, items: [Item])] {
+        var grouped: [Home: [Item]] = [:]
+        
+        // Group filtered items by their home
+        for item in filteredItems {
+            if let home = item.location?.home {
+                grouped[home, default: []].append(item)
+            } else {
+                // Items without home association go to a "未分类" section
+                let unclassifiedHome = Home(name: "未分类", isPrimary: false)
+                grouped[unclassifiedHome, default: []].append(item)
+            }
+        }
+        
+        // Convert to array and sort by home name
+        var result = grouped.map { (home: $0.key, items: $0.value) }
+        result.sort { $0.home.name < $1.home.name }
+        
+        return result
+    }
+    
     // Get unique categories for filtering
     var categories: [String] {
         Array(Set(items.compactMap { $0.category }))
@@ -59,60 +84,66 @@ struct ItemsView: View {
     
     var body: some View {
         NavigationStack {
-            List(filteredItems, id: \.persistentModelID) { item in
-                NavigationLink(destination: ItemDetailView(item: item)) {
-                    HStack {
-                        if let photoData = item.photoData,
-                           let uiImage = UIImage(data: photoData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        } else {
-                            Image(systemName: "photo")
-                                .frame(width: 50, height: 50)
-                                .background(Color.secondary.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Text(item.name)
-                                .font(.headline)
-                            
-                            HStack {
-                                if let location = item.location {
-                                    Text(location.name)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                if let category = item.category {
-                                    Text("• \(category)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            
-                            if !item.tags.isEmpty {
-                                HStack(spacing: 4) {
-                                    ForEach(item.tags.prefix(2), id: \.self) { tag in
-                                        Text(tag)
-                                            .font(.caption2)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color.blue.opacity(0.1))
-                                            .foregroundColor(.blue)
-                                            .cornerRadius(4)
+            List {
+                ForEach(itemsByHome, id: \.home.persistentModelID) { homeGroup in
+                    Section(homeGroup.home.name) {
+                        ForEach(homeGroup.items, id: \.persistentModelID) { item in
+                            NavigationLink(destination: ItemDetailView(item: item)) {
+                                HStack {
+                                    if let photoData = item.photoData,
+                                       let uiImage = UIImage(data: photoData) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 50, height: 50)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    } else {
+                                        Image(systemName: "photo")
+                                            .frame(width: 50, height: 50)
+                                            .background(Color.secondary.opacity(0.1))
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text(item.name)
+                                            .font(.headline)
+                                        
+                                        HStack {
+                                            if let location = item.location {
+                                                Text(location.name)
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            if let category = item.category {
+                                                Text("• \(category)")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        
+                                        if !item.tags.isEmpty {
+                                            HStack(spacing: 4) {
+                                                ForEach(item.tags.prefix(2), id: \.self) { tag in
+                                                    Text(tag)
+                                                        .font(.caption2)
+                                                        .padding(.horizontal, 6)
+                                                        .padding(.vertical, 2)
+                                                        .background(Color.blue.opacity(0.1))
+                                                        .foregroundColor(.blue)
+                                                        .cornerRadius(4)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(item.quantity)")
+                                        .font(.headline)
                                 }
                             }
                         }
-                        
-                        Spacer()
-                        
-                        Text("\(item.quantity)")
-                            .font(.headline)
                     }
                 }
             }
@@ -170,5 +201,5 @@ struct ItemsView: View {
 
 #Preview {
     ItemsView()
-        .modelContainer(for: [Item.self, StorageLocation.self], inMemory: true)
+        .modelContainer(for: [Item.self, StorageLocation.self, Home.self], inMemory: true)
 }

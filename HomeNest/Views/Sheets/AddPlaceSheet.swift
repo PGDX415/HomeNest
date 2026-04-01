@@ -1,5 +1,5 @@
 //
-//  AddHomeSheet.swift
+//  AddPlaceSheet.swift
 //  HomeNest
 //
 //  Created by Paul Dexin Gong on 2026/4/1.
@@ -8,25 +8,25 @@
 import SwiftUI
 import SwiftData
 
-struct AddHomeSheet: View {
+struct AddPlaceSheet: View {
     @Environment(\.dismiss) private var dismiss
     
-    let existingHome: Home?  // Added to support editing existing homes
+    let existingPlace: Home?  // Added to support editing existing places
     let onSave: (Home) -> Void
     
     @State private var name = ""
     @State private var address = ""
     @State private var icon = ""
     
-    init(existingHome: Home? = nil, onSave: @escaping (Home) -> Void) {
-        self.existingHome = existingHome
+    init(existingPlace: Home? = nil, onSave: @escaping (Home) -> Void) {
+        self.existingPlace = existingPlace
         self.onSave = onSave
         
-        // Initialize state variables if editing an existing home
-        if let existingHome = existingHome {
-            _name = State(initialValue: existingHome.name)
-            _address = State(initialValue: existingHome.address ?? "")
-            _icon = State(initialValue: existingHome.icon ?? "")
+        // Initialize state variables if editing an existing place
+        if let existingPlace = existingPlace {
+            _name = State(initialValue: existingPlace.name)
+            _address = State(initialValue: existingPlace.address ?? "")
+            _icon = State(initialValue: existingPlace.icon ?? "")
         }
     }
     
@@ -34,7 +34,7 @@ struct AddHomeSheet: View {
         NavigationStack {
             Form {
                 Section("基本信息") {
-                    TextField("家庭名称*", text: $name)
+                    TextField("场所名称*", text: $name)
                     
                     TextField("地址", text: $address)
                     
@@ -43,7 +43,7 @@ struct AddHomeSheet: View {
                         .autocorrectionDisabled()
                 }
             }
-            .navigationTitle(existingHome == nil ? "添加家庭" : "编辑家庭")
+            .navigationTitle(existingPlace == nil ? "添加场所" : "编辑场所")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -56,21 +56,21 @@ struct AddHomeSheet: View {
                     Button("保存") {
                         guard !name.isEmpty else { return }
                         
-                        if let existingHome = existingHome {
-                            // Update existing home directly
-                            existingHome.name = name
-                            existingHome.address = address.isEmpty ? nil : address
-                            existingHome.icon = icon.isEmpty ? nil : icon
-                            existingHome.updatedAt = Date()
+                        if let existingPlace = existingPlace {
+                            // Update existing place directly
+                            existingPlace.name = name
+                            existingPlace.address = address.isEmpty ? nil : address
+                            existingPlace.icon = icon.isEmpty ? nil : icon
+                            existingPlace.updatedAt = Date()
                         } else {
-                            // Create new home
-                            let newHome = Home(
+                            // Create new place
+                            let newPlace = Home(
                                 name: name,
                                 address: address.isEmpty ? nil : address,
                                 icon: icon.isEmpty ? nil : icon
                             )
                             
-                            onSave(newHome)
+                            onSave(newPlace)
                         }
                         dismiss()
                     }
@@ -83,7 +83,7 @@ struct AddHomeSheet: View {
 
 #Preview {
     NavigationStack {
-        AddHomeSheet { _ in }
+        AddPlaceSheet { _ in }
     }
     .modelContainer(for: [Item.self, StorageLocation.self, Home.self], inMemory: true)
 }

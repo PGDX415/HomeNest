@@ -24,16 +24,18 @@ struct SplashView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 30) {
+            VStack(spacing: 20) { // 减少 spacing 从 30 到 20
+                Spacer() // 添加顶部 Spacer 让内容更居中
+                
                 // 主要图标 - 使用系统图标模拟家庭物品管理
                 Image(systemName: "house.fill")
-                    .font(.system(size: 80, weight: .thin))
+                    .font(.system(size: 70, weight: .thin)) // 稍微减小图标大小
                     .foregroundColor(Color(red: 0.65, green: 0.45, blue: 0.35)) // 温暖棕色
-                    .padding(20)
+                    .padding(25) // 稍微增加内边距
                     .background(
                         Circle()
-                            .fill(Color.white.opacity(0.8))
-                            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+                            .fill(Color.white.opacity(0.85))
+                            .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 5)
                     )
                 
                 // 应用名称
@@ -68,9 +70,9 @@ struct SplashView: View {
                         .font(.title2)
                         .foregroundColor(Color(red: 0.75, green: 0.65, blue: 0.55))
                 }
-                .padding(.top, 10)
+                .padding(.top, 15) // 稍微增加顶部间距
                 
-                Spacer()
+                Spacer() // 添加底部 Spacer 平衡布局
                 
                 // 版权信息
                 Text("© 2026 家物管")

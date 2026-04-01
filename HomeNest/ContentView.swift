@@ -9,45 +9,36 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State private var selectedTab = 0
+    @State private var selectedTab = 1 // Changed default to 统计 tab
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Homes Tab - Main entry point for multi-home support
+            // Places Tab - Main entry point for multi-place support
             NavigationStack {
-                HomesView()
+                PlacesView()
             }
             .tabItem {
-                Label("家庭", systemImage: "house.fill")
+                Label("场所", systemImage: "house.fill")
             }
             .tag(0)
             
-            // Dashboard Tab - Will need to be updated to work with selected home
+            // Dashboard Tab - Updated to "统计" for better clarity
             NavigationStack {
                 DashboardView()
             }
             .tabItem {
-                Label("首页", systemImage: "house.fill")
+                Label("统计", systemImage: "chart.bar.fill")
             }
             .tag(1)
             
-            // Locations Tab - Will need to be updated to work with selected home
-            NavigationStack {
-                LocationsView(home: nil) // This will need to be updated
-            }
-            .tabItem {
-                Label("位置", systemImage: "folder.fill")
-            }
-            .tag(2)
-            
-            // Items Tab - Will need to be updated to work with selected home
+            // Items Tab - Browse all items across all places
             NavigationStack {
                 ItemsView()
             }
             .tabItem {
                 Label("物品", systemImage: "list.bullet.rectangle")
             }
-            .tag(3)
+            .tag(2)
             
             // Profile Tab
             NavigationStack {
@@ -57,7 +48,7 @@ struct ContentView: View {
             .tabItem {
                 Label("我", systemImage: "person.fill")
             }
-            .tag(4)
+            .tag(3)
         }
     }
 }

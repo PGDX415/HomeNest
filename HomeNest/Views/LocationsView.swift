@@ -68,8 +68,9 @@ struct LocationsView: View {
             ForEach(sortedLocations, id: \.persistentModelID) { location in
                 NavigationLink(destination: LocationDetailView(location: location)) {
                     HStack {
-                        if let icon = location.icon, !icon.isEmpty {
-                            Image(systemName: icon)
+                        // Safe icon handling - ensure non-empty valid SF Symbol
+                        if let icon = location.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Image(systemName: icon.trimmingCharacters(in: .whitespacesAndNewlines))
                                 .foregroundColor(.primary)
                         } else {
                             Image(systemName: "folder.fill")
@@ -83,6 +84,14 @@ struct LocationsView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .lineLimit(2)
+                            
+                            // 显示物品数量（包括子位置的物品）
+                            let totalCount = location.totalItemCount()
+                            if totalCount > 0 {
+                                Text("\(totalCount) 个物品")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         
                         Spacer()

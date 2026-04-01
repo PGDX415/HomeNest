@@ -1,5 +1,5 @@
 //
-//  HomesView.swift
+//  PlacesView.swift
 //  HomeNest
 //
 //  Created by Paul Dexin Gong on 2026/4/1.
@@ -8,19 +8,20 @@
 import SwiftUI
 import SwiftData
 
-struct HomesView: View {
+struct PlacesView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var allHomes: [Home]
+    @Query private var allPlaces: [Home]
     
-    @State private var showingAddHomeSheet = false
+    @State private var showingAddPlaceSheet = false
     
     var body: some View {
         List {
-            ForEach(allHomes, id: \.persistentModelID) { home in
-                NavigationLink(destination: LocationsView(home: home)) {
+            ForEach(allPlaces, id: \.persistentModelID) { place in
+                NavigationLink(destination: LocationsView(home: place)) {
                     HStack {
-                        if let icon = home.icon, !icon.isEmpty {
-                            Image(systemName: icon)
+                        // Safe icon handling - ensure non-empty valid SF Symbol
+                        if let icon = place.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Image(systemName: icon.trimmingCharacters(in: .whitespacesAndNewlines))
                                 .foregroundColor(.primary)
                         } else {
                             Image(systemName: "house.fill")
@@ -28,10 +29,18 @@ struct HomesView: View {
                         }
                         
                         VStack(alignment: .leading) {
-                            Text(home.name)
+                            Text(place.name)
                                 .font(.headline)
-                            if let address = home.address {
+                            if let address = place.address {
                                 Text(address)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            // 显示物品数量
+                            let itemCount = place.totalItemCount()
+                            if itemCount > 0 {
+                                Text("\(itemCount) 个物品")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -39,7 +48,7 @@ struct HomesView: View {
                         
                         Spacer()
                         
-                        if home.isPrimary {
+                        if place.isPrimary {
                             Text("主")
                                 .font(.caption)
                                 .padding(.horizontal, 8)
@@ -51,31 +60,31 @@ struct HomesView: View {
                     }
                 }
             }
-            .onDelete(perform: deleteHomes)
+            .onDelete(perform: deletePlaces)
         }
-        .navigationTitle("家庭")
+        .navigationTitle("场所")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
-                    showingAddHomeSheet = true
+                    showingAddPlaceSheet = true
                 }) {
                     Label("添加", systemImage: "plus")
                 }
             }
         }
-        .sheet(isPresented: $showingAddHomeSheet) {
-            AddHomeSheet { newHome in
-                // Set as primary if this is the first home
-                if allHomes.isEmpty {
-                    newHome.isPrimary = true
+        .sheet(isPresented: $showingAddPlaceSheet) {
+            AddPlaceSheet { newPlace in
+                // Set as primary if this is the first place
+                if allPlaces.isEmpty {
+                    newPlace.isPrimary = true
                 }
-                modelContext.insert(newHome)
+                modelContext.insert(newPlace)
             }
         }
-        .alert("确认删除家庭", isPresented: $showingDeleteConfirmation) {
+        .alert("确认删除场所", isPresented: $showingDeleteConfirmation) {
             Button("删除", role: .destructive) {
-                if let home = homeToDelete {
-                    deleteHome(home)
+                if let place = placeToDelete {
+                    deletePlace(place)
                 }
             }
             Button("取消", role: .cancel) {}
@@ -85,16 +94,16 @@ struct HomesView: View {
     }
     
     @State private var showingDeleteConfirmation = false
-    @State private var homeToDelete: Home?
+    @State private var placeToDelete: Home?
     
     // Helper function to generate delete confirmation message
     private func deleteConfirmationMessage() -> Text {
-        guard let home = homeToDelete else {
-            return Text("确定要删除此家庭吗？此操作无法撤销。")
+        guard let place = placeToDelete else {
+            return Text("确定要删除此场所吗？此操作无法撤销。")
         }
         
-        let locationCount = home.locations.count
-        var message = "确定要删除家庭\"\(home.name)\"吗？"
+        let locationCount = place.locations.count
+        var message = "确定要删除场所\"\(place.name)\"吗？"
         
         if locationCount > 0 {
             message += "\n\n此操作将同时删除："
@@ -106,22 +115,22 @@ struct HomesView: View {
         return Text(message)
     }
     
-    private func deleteHomes(offsets: IndexSet) {
-        guard let index = offsets.first, index < allHomes.count else { return }
-        let home = allHomes[index]
-        homeToDelete = home
+    private func deletePlaces(offsets: IndexSet) {
+        guard let index = offsets.first, index < allPlaces.count else { return }
+        let place = allPlaces[index]
+        placeToDelete = place
         showingDeleteConfirmation = true
     }
     
-    private func deleteHome(_ home: Home) {
+    private func deletePlace(_ place: Home) {
         withAnimation {
-            modelContext.delete(home)
+            modelContext.delete(place)
         }
-        homeToDelete = nil
+        placeToDelete = nil
     }
 }
 
 #Preview {
-    HomesView()
+    PlacesView()
         .modelContainer(for: [Item.self, StorageLocation.self, Home.self], inMemory: true)
 }

@@ -37,4 +37,24 @@ final class StorageLocation {
         self.icon = icon
         self.isFavorite = isFavorite
     }
+    
+    // 计算位置的总物品数量（包括所有子位置的物品）
+    func totalItemCount() -> Int {
+        var totalCount = items.count
+        
+        // 限制递归深度以防止无限循环（最大10层）
+        func countItemsInSubLocations(_ locations: [StorageLocation], depth: Int = 0) -> Int {
+            guard depth < 10 else { return 0 }
+            
+            var count = 0
+            for location in locations {
+                count += location.items.count
+                count += countItemsInSubLocations(location.subLocations, depth: depth + 1)
+            }
+            return count
+        }
+        
+        totalCount += countItemsInSubLocations(subLocations)
+        return totalCount
+    }
 }
