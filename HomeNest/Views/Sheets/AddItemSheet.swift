@@ -6,40 +6,52 @@ struct AddItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    let location: StorageLocation?
-    let existingItem: Item?  // Added to support editing existing items
-    let onSave: (Item) -> Void
+    // Predefined categories for home inventory
+    private let presetCategories = [
+        "家电电器", "厨房用品", "衣物鞋帽", "书籍文具",
+        "食品饮品", "清洁用品", "医药保健", "装饰摆件",
+        "工具设备", "其他杂物"
+    ]
     
-    @State private var name = ""
-    @State private var quantity = 1
-    @State private var descriptionText = ""  // This is the UI field name, not the model property
-    @State private var value: Double?
+    // Item properties
+    @State private var name: String = ""
+    @State private var quantity: Int = 1
+    @State private var category: String = ""  // Selected category
+    @State private var details: String = ""
+    @State private var value: Double?  // Changed to Double?
     @State private var purchaseDate: Date?
     @State private var expiryDate: Date?
-    @State private var category = ""
-    @State private var tagsText = ""
+    @State private var tagsText: String = ""  // For tag input
+    
+    // Location selection
     @State private var selectedLocation: StorageLocation?
+    let location: StorageLocation?  // Pre-selected location (for adding item to specific location)
     
-    @State private var selectedPhotoItem: PhotosPickerItem?
+    // Photo handling
     @State private var photoData: Data?
+    @State private var showingImagePicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
     
-    // Predefined categories
-    private let predefinedCategories = ["家电", "衣物", "书籍", "厨房", "食品", "工具", "装饰", "其他"]
+    // Existing item reference (for edit mode)
+    let existingItem: Item?
     
-    init(location: StorageLocation?, existingItem: Item? = nil, onSave: @escaping (Item) -> Void) {
+    // Completion handler
+    let onAdd: (Item) -> Void
+    
+    init(location: StorageLocation?, existingItem: Item? = nil, onAdd: @escaping (Item) -> Void) {
         self.location = location
         self.existingItem = existingItem
-        self.onSave = onSave
+        self.onAdd = onAdd
         
-        // Initialize state variables if editing an existing item
+        // Initialize with existing item data if in edit mode
         if let existingItem = existingItem {
             _name = State(initialValue: existingItem.name)
             _quantity = State(initialValue: existingItem.quantity)
-            _descriptionText = State(initialValue: existingItem.details ?? "")
+            _category = State(initialValue: existingItem.category ?? "")
+            _details = State(initialValue: existingItem.details ?? "")
             _value = State(initialValue: existingItem.value)
             _purchaseDate = State(initialValue: existingItem.purchaseDate)
             _expiryDate = State(initialValue: existingItem.expiryDate)
-            _category = State(initialValue: existingItem.category ?? "")
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
             _selectedLocation = State(initialValue: existingItem.location)
@@ -54,16 +66,13 @@ struct AddItemSheet: View {
                     
                     Stepper("数量: \(quantity)", value: $quantity, in: 1...999)
                     
-                    TextField("描述", text: $descriptionText)
+                    TextField("描述", text: $details)
                 }
                 
                 Section("分类与标签") {
                     Picker("类别", selection: $category) {
-                        Text("无").tag("")
-                        ForEach(predefinedCategories, id: \.self) { cat in
-                            Text(cat).tag(cat)
-                        }
-                        if !predefinedCategories.contains(category) && !category.isEmpty {
+                        Text("未分类").tag("")
+                        ForEach(presetCategories, id: \.self) { category in
                             Text(category).tag(category)
                         }
                     }
@@ -71,6 +80,7 @@ struct AddItemSheet: View {
                     
                     TextField("标签 (用逗号分隔)", text: $tagsText)
                         .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                 }
                 
                 Section("价值与日期") {
@@ -163,14 +173,15 @@ struct AddItemSheet: View {
                     Button("保存") {
                         guard !name.isEmpty else { return }
                         
-                        let tags = tagsText.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }
+                        let tags = tagsText.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }.filter { !$0.isEmpty }
+                        let numericValue = value
                         
                         if let existingItem = existingItem {
                             // Update existing item directly - no new item creation
                             existingItem.name = name
                             existingItem.quantity = quantity
-                            existingItem.details = descriptionText.isEmpty ? nil : descriptionText
-                            existingItem.value = value
+                            existingItem.details = details.isEmpty ? nil : details
+                            existingItem.value = numericValue
                             existingItem.purchaseDate = purchaseDate
                             existingItem.expiryDate = expiryDate
                             existingItem.category = category.isEmpty ? nil : category
@@ -180,15 +191,15 @@ struct AddItemSheet: View {
                             existingItem.updatedAt = Date()
                             
                             // Call onSave with the existing (now updated) item
-                            onSave(existingItem)
+                            onAdd(existingItem)
                         } else {
                             // Create new item for add mode
                             let newItem = Item(
                                 name: name,
                                 quantity: quantity,
                                 location: selectedLocation ?? location,
-                                details: descriptionText.isEmpty ? nil : descriptionText,
-                                value: value,
+                                details: details.isEmpty ? nil : details,
+                                value: numericValue,
                                 purchaseDate: purchaseDate,
                                 expiryDate: expiryDate,
                                 category: category.isEmpty ? nil : category,
@@ -196,8 +207,9 @@ struct AddItemSheet: View {
                                 photoData: photoData
                             )
                             
-                            onSave(newItem)
+                            onAdd(newItem)
                         }
+                        
                         dismiss()
                     }
                     .disabled(name.isEmpty)

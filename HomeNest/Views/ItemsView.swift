@@ -12,6 +12,13 @@ struct ItemsView: View {
     @State private var selectedCategory: String?
     @State private var showExpiringSoon = false
     
+    // Predefined categories matching AddItemSheet
+    private let presetCategories = [
+        "家电电器", "厨房用品", "衣物鞋帽", "书籍文具",
+        "食品饮品", "清洁用品", "医药保健", "装饰摆件",
+        "工具设备", "其他杂物"
+    ]
+    
     // Biometric authentication state
     @State private var showingBiometricAlert = false
     @State private var biometricError: String = ""
