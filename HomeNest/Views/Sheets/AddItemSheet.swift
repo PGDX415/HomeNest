@@ -96,20 +96,33 @@ struct AddItemSheet: View {
                 }
                 
                 Section("位置") {
-                    if let loc = selectedLocation ?? location {
-                        HStack {
-                            if let icon = loc.icon {
-                                Image(systemName: icon)
-                            } else {
-                                Image(systemName: "folder.fill")
+                    // Always allow location selection in edit mode, or when no location is pre-selected in add mode
+                    if existingItem != nil || selectedLocation != nil {
+                        // In edit mode, or user has already selected a location in add mode
+                        let currentLocation = selectedLocation ?? location
+                        if let loc = currentLocation {
+                            HStack {
+                                if let icon = loc.icon {
+                                    Image(systemName: icon)
+                                } else {
+                                    Image(systemName: "folder.fill")
+                                }
+                                Text(loc.name)
+                                Spacer()
+                                Text(loc.type.rawValue)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
-                            Text(loc.name)
-                            Spacer()
-                            Text(loc.type.rawValue)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                        }
+                        // Always show the navigation link to change location in edit mode
+                        if existingItem != nil {
+                            NavigationLink(destination: LocationPickerView(selectedLocation: $selectedLocation)) {
+                                Label("更改位置", systemImage: "arrow.triangle.2.circlepath")
+                                    .foregroundColor(.blue)
+                            }
                         }
                     } else {
+                        // Add mode with no pre-selected location
                         NavigationLink(destination: LocationPickerView(selectedLocation: $selectedLocation)) {
                             Label("选择位置", systemImage: "folder.fill")
                         }

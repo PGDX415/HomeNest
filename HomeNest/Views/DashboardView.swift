@@ -104,7 +104,7 @@ struct DashboardView: View {
             }
             .padding(.top, 8)
         }
-        .navigationTitle("首页")
+        .navigationTitle("家物管")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
