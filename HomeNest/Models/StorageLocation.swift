@@ -18,6 +18,7 @@ final class StorageLocation {
     var icon: String?               // SF Symbols 或 emoji（如 "🛋️"）
     var type: LocationType
     var parent: StorageLocation?    // 父位置（可选）
+    var isFavorite: Bool = false    // 收藏/标记状态
     
     @Relationship(deleteRule: .cascade, inverse: \StorageLocation.parent)
     var subLocations: [StorageLocation] = []
@@ -25,10 +26,15 @@ final class StorageLocation {
     @Relationship(deleteRule: .cascade)
     var items: [Item] = []
     
-    init(name: String, type: LocationType, parent: StorageLocation? = nil, icon: String? = nil) {
+    // 新增：关联到家庭
+    var home: Home?
+    
+    init(name: String, type: LocationType, parent: StorageLocation? = nil, home: Home? = nil, icon: String? = nil, isFavorite: Bool = false) {
         self.name = name
         self.type = type
         self.parent = parent
+        self.home = home
         self.icon = icon
+        self.isFavorite = isFavorite
     }
 }

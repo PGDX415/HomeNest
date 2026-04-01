@@ -14,6 +14,7 @@ struct HomeNestApp: App {
         let schema = Schema([
             Item.self,
             StorageLocation.self,
+            Home.self,  // Added Home model
         ])
         // Configure for CloudKit sync with proper settings
         let modelConfiguration = ModelConfiguration(

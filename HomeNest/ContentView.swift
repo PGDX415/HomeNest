@@ -13,32 +13,41 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Dashboard Tab
+            // Homes Tab - Main entry point for multi-home support
+            NavigationStack {
+                HomesView()
+            }
+            .tabItem {
+                Label("家庭", systemImage: "house.fill")
+            }
+            .tag(0)
+            
+            // Dashboard Tab - Will need to be updated to work with selected home
             NavigationStack {
                 DashboardView()
             }
             .tabItem {
                 Label("首页", systemImage: "house.fill")
             }
-            .tag(0)
+            .tag(1)
             
-            // Locations Tab
+            // Locations Tab - Will need to be updated to work with selected home
             NavigationStack {
-                LocationsView()
+                LocationsView(home: nil) // This will need to be updated
             }
             .tabItem {
                 Label("位置", systemImage: "folder.fill")
             }
-            .tag(1)
+            .tag(2)
             
-            // Items Tab
+            // Items Tab - Will need to be updated to work with selected home
             NavigationStack {
                 ItemsView()
             }
             .tabItem {
                 Label("物品", systemImage: "list.bullet.rectangle")
             }
-            .tag(2)
+            .tag(3)
             
             // Profile Tab
             NavigationStack {
@@ -48,12 +57,12 @@ struct ContentView: View {
             .tabItem {
                 Label("我", systemImage: "person.fill")
             }
-            .tag(3)
+            .tag(4)
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Item.self, StorageLocation.self], inMemory: true)
+        .modelContainer(for: [Item.self, StorageLocation.self, Home.self], inMemory: true)
 }
