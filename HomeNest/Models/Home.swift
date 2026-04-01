@@ -59,6 +59,21 @@ final class Home {
         }
     }
     
+    // 安全获取图标名称，确保返回有效的SF Symbols名称
+    func getSafeIconName() -> String {
+        guard let iconName = icon else {
+            return "house.fill"
+        }
+        
+        let trimmedIcon = iconName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedIcon.isEmpty {
+            // 调试：打印空图标信息
+            print("⚠️ Home '\(name)' has empty icon string: '\(iconName)'")
+            return "house.fill"
+        }
+        return trimmedIcon
+    }
+    
     // 计算场所的总物品数量（包括所有子位置的物品）
     func totalItemCount() -> Int {
         var totalCount = 0

@@ -24,14 +24,8 @@ struct PlacesView: View {
             ForEach(allPlaces, id: \.persistentModelID) { place in
                 NavigationLink(destination: LocationsView(home: place)) {
                     HStack {
-                        // Safe icon handling - ensure non-empty valid SF Symbol with custom color
-                        if let icon = place.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Image(systemName: icon.trimmingCharacters(in: .whitespacesAndNewlines))
-                                .foregroundColor(place.getIconColor())
-                        } else {
-                            Image(systemName: "house.fill")
-                                .foregroundColor(place.getIconColor())
-                        }
+                        Image(systemName: place.getSafeIconName())
+                            .foregroundColor(place.getIconColor())
                         
                         VStack(alignment: .leading) {
                             Text(place.name)

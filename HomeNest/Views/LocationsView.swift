@@ -73,14 +73,8 @@ struct LocationsView: View {
             ForEach(sortedLocations, id: \.persistentModelID) { location in
                 NavigationLink(destination: LocationDetailView(location: location)) {
                     HStack {
-                        // Safe icon handling - ensure non-empty valid SF Symbol with custom color
-                        if let icon = location.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Image(systemName: icon.trimmingCharacters(in: .whitespacesAndNewlines))
-                                .foregroundColor(location.getIconColor())
-                        } else {
-                            Image(systemName: "folder.fill")
-                                .foregroundColor(location.getIconColor())
-                        }
+                        Image(systemName: location.getSafeIconName())
+                            .foregroundColor(location.getIconColor())
                         
                         VStack(alignment: .leading) {
                             Text(location.name)

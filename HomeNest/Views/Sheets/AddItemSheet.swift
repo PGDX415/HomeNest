@@ -102,12 +102,15 @@ struct AddItemSheet: View {
                         let currentLocation = selectedLocation ?? location
                         if let loc = currentLocation {
                             HStack {
-                                if let icon = loc.icon {
-                                    Image(systemName: icon)
-                                } else {
-                                    Image(systemName: "folder.fill")
+                                Image(systemName: loc.getSafeIconName())
+                                VStack(alignment: .leading) {
+                                    Text(loc.name)
+                                        .font(.headline)
+                                    Text(getLocationPath(for: loc))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(2)
                                 }
-                                Text(loc.name)
                                 Spacer()
                                 Text(loc.type.rawValue)
                                     .font(.caption)
@@ -222,6 +225,22 @@ struct AddItemSheet: View {
         // Convert to JPEG with specified quality
         return image.jpegData(compressionQuality: quality)
     }
+    
+    // Helper function to get full location path - with nil safety and depth limit
+    func getLocationPath(for location: StorageLocation) -> String {
+        var pathComponents: [String] = [location.name]
+        var currentLocation: StorageLocation? = location.parent
+        
+        // Limit depth to prevent infinite loops (max 10 levels)
+        var depth = 0
+        while let current = currentLocation, depth < 10 {
+            pathComponents.insert(current.name, at: 0)
+            currentLocation = current.parent
+            depth += 1
+        }
+        
+        return pathComponents.joined(separator: " > ")
+    }
 }
 
 // Simple location picker view - FLAT LIST APPROACH
@@ -234,7 +253,7 @@ struct LocationPickerView: View {
     }
     
     // Helper function to get full location path - with nil safety and depth limit
-    func locationPath(for location: StorageLocation) -> String {
+    func getLocationPath(for location: StorageLocation) -> String {
         var pathComponents: [String] = [location.name]
         var currentLocation: StorageLocation? = location.parent
         
@@ -256,15 +275,11 @@ struct LocationPickerView: View {
                     selectedLocation = location
                 }) {
                     HStack {
-                        if let icon = location.icon, !icon.isEmpty {
-                            Image(systemName: icon)
-                        } else {
-                            Image(systemName: "folder.fill")
-                        }
+                        Image(systemName: location.getSafeIconName())
                         VStack(alignment: .leading) {
                             Text(location.name)
                                 .font(.headline)
-                            Text(locationPath(for: location))
+                            Text(getLocationPath(for: location))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .lineLimit(2)

@@ -61,23 +61,32 @@ struct ItemsView: View {
     }
     
     // Group items by home
-    var itemsByHome: [(home: Home, items: [Item])] {
-        var grouped: [Home: [Item]] = [:]
+    var itemsByHome: [(home: Home?, items: [Item])] {
+        var grouped: [Home?: [Item]] = [:]
         
         // Group filtered items by their home
         for item in filteredItems {
-            if let home = item.location?.home {
-                grouped[home, default: []].append(item)
-            } else {
-                // Items without home association go to a "未分类" section
-                let unclassifiedHome = Home(name: "未分类", isPrimary: false)
-                grouped[unclassifiedHome, default: []].append(item)
-            }
+            let home = item.location?.home
+            grouped[home, default: []].append(item)
         }
         
-        // Convert to array and sort by home name
+        // Convert to array and sort - nil homes (unclassified) come first
         var result = grouped.map { (home: $0.key, items: $0.value) }
-        result.sort { $0.home.name < $1.home.name }
+        result.sort { (group1, group2) in
+            // Items without home come first
+            if group1.home == nil && group2.home != nil {
+                return true
+            }
+            if group1.home != nil && group2.home == nil {
+                return false
+            }
+            // Both have homes, sort by name
+            if let home1 = group1.home, let home2 = group2.home {
+                return home1.name < home2.name
+            }
+            // Both are nil
+            return false
+        }
         
         return result
     }
@@ -91,8 +100,9 @@ struct ItemsView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(itemsByHome, id: \.home.persistentModelID) { homeGroup in
-                    Section(homeGroup.home.name) {
+                ForEach(itemsByHome.indices, id: \.self) { index in
+                    let homeGroup = itemsByHome[index]
+                    Section(homeGroup.home?.name ?? "未分类") {
                         ForEach(homeGroup.items, id: \.persistentModelID) { item in
                             NavigationLink(destination: ItemDetailView(item: item)) {
                                 HStack {
