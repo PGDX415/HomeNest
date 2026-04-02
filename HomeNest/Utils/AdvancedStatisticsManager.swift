@@ -109,12 +109,12 @@ class AdvancedStatisticsManager {
             let itemDescriptor = FetchDescriptor<Item>()
             let items = try context.fetch(itemDescriptor)
             
-            // 初始化家庭映射
+            // Initialize family mapping
             for home in homes {
                 homeMap[home.name] = (itemCount: 0, locationCount: 0, totalValue: 0.0)
             }
             
-            // 统计位置数量
+            // Count locations
             for location in locations {
                 if let home = location.home {
                     if var existing = homeMap[home.name] {
@@ -124,7 +124,7 @@ class AdvancedStatisticsManager {
                 }
             }
             
-            // 统计物品数量和价值
+            // Count items and values
             for item in items {
                 if let location = item.location, let home = location.home {
                     let value = item.value ?? 0.0

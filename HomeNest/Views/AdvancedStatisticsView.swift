@@ -18,6 +18,7 @@ struct AdvancedStatisticsView: View {
     @State private var timeDistribution: [TimeDistribution] = []
     @State private var storageAnalysis: [StorageAnalysis] = []
     @State private var itemHistory: [ItemHistory] = []
+    @State private var isLoading = false
     
     enum StatisticsTab: String, CaseIterable {
         case distribution = "物品分布"
@@ -38,34 +39,81 @@ struct AdvancedStatisticsView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
+                .onChange(of: selectedTab) { newValue in
+                    loadStatisticsForTab(newValue)
+                }
                 
                 // 根据选择显示不同内容
-                switch selectedTab {
-                case .distribution:
-                    DistributionView(
-                        categoryDistribution: categoryDistribution,
-                        homeDistribution: homeDistribution,
-                        timeDistribution: timeDistribution
-                    )
-                case .storage:
-                    StorageAnalysisView(storageAnalysis: storageAnalysis)
-                case .history:
-                    HistoryView(itemHistory: itemHistory)
+                Group {
+                    switch selectedTab {
+                    case .distribution:
+                        if isLoading && (categoryDistribution.isEmpty || homeDistribution.isEmpty || timeDistribution.isEmpty) {
+                            ProgressView("加载中...")
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            DistributionView(
+                                categoryDistribution: categoryDistribution,
+                                homeDistribution: homeDistribution,
+                                timeDistribution: timeDistribution
+                            )
+                        }
+                    case .storage:
+                        if isLoading && storageAnalysis.isEmpty {
+                            ProgressView("加载中...")
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            StorageAnalysisView(storageAnalysis: storageAnalysis)
+                        }
+                    case .history:
+                        if isLoading && itemHistory.isEmpty {
+                            ProgressView("加载中...")
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            HistoryView(itemHistory: itemHistory)
+                        }
+                    }
                 }
             }
             .navigationTitle("高级统计")
             .onAppear {
-                loadAllStatistics()
+                // Load the default tab (distribution) on first appearance
+                loadStatisticsForTab(.distribution)
             }
         }
     }
     
-    private func loadAllStatistics() {
-        categoryDistribution = AdvancedStatisticsManager.shared.getCategoryDistribution(context: modelContext)
-        homeDistribution = AdvancedStatisticsManager.shared.getHomeDistribution(context: modelContext)
-        timeDistribution = AdvancedStatisticsManager.shared.getTimeDistribution(context: modelContext)
-        storageAnalysis = AdvancedStatisticsManager.shared.getStorageAnalysis(context: modelContext)
-        itemHistory = AdvancedStatisticsManager.shared.getItemHistory(context: modelContext)
+    private func loadStatisticsForTab(_ tab: StatisticsTab) {
+        guard !isLoading else { return }
+        
+        isLoading = true
+        
+        // Use async to prevent blocking UI
+        Task {
+            switch tab {
+            case .distribution:
+                if categoryDistribution.isEmpty {
+                    categoryDistribution = AdvancedStatisticsManager.shared.getCategoryDistribution(context: modelContext)
+                }
+                if homeDistribution.isEmpty {
+                    homeDistribution = AdvancedStatisticsManager.shared.getHomeDistribution(context: modelContext)
+                }
+                if timeDistribution.isEmpty {
+                    timeDistribution = AdvancedStatisticsManager.shared.getTimeDistribution(context: modelContext)
+                }
+            case .storage:
+                if storageAnalysis.isEmpty {
+                    storageAnalysis = AdvancedStatisticsManager.shared.getStorageAnalysis(context: modelContext)
+                }
+            case .history:
+                if itemHistory.isEmpty {
+                    itemHistory = AdvancedStatisticsManager.shared.getItemHistory(context: modelContext)
+                }
+            }
+            
+            await MainActor.run {
+                isLoading = false
+            }
+        }
     }
 }
 
