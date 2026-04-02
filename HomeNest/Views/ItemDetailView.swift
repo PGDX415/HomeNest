@@ -13,15 +13,15 @@ struct ItemDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Photo section
-                if let photoData = item.photoData,
-                   let uiImage = UIImage(data: photoData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)  // Changed from .fill to .fit
-                        .frame(maxWidth: .infinity, maxHeight: 300)  // Use maxWidth instead of fixed height
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
+                // Photo section - using cached async image
+                CachedAsyncImage(
+                    imageData: item.photoData,
+                    cacheKey: String(describing: item.persistentModelID),
+                    contentMode: .fit,
+                    maxWidth: .infinity,
+                    maxHeight: 300
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 // Basic info section
                 VStack(alignment: .leading, spacing: 8) {

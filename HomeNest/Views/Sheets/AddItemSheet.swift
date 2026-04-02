@@ -207,9 +207,9 @@ struct AddItemSheet: View {
                 
                 // Load the selected photo
                 if let data = try? await selectedItem.loadTransferable(type: Data.self) {
-                    // Compress the image if it's too large
+                    // Use ImageManager for compression
                     if let uiImage = UIImage(data: data),
-                       let compressedData = compressImage(uiImage, quality: 0.8) {
+                       let compressedData = ImageManager.shared.compressImage(uiImage) {
                         photoData = compressedData
                     } else {
                         photoData = data
@@ -217,12 +217,6 @@ struct AddItemSheet: View {
                 }
             }
         }
-    }
-    
-    // Helper function to compress image
-    func compressImage(_ image: UIImage, quality: CGFloat) -> Data? {
-        // Convert to JPEG with specified quality
-        return image.jpegData(compressionQuality: quality)
     }
 }
 
