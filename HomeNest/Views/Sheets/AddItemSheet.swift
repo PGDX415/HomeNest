@@ -174,6 +174,8 @@ struct AddItemSheet: View {
                             existingItem.tags = tags
                             existingItem.photoData = photoData
                             existingItem.location = selectedLocation ?? location
+                            // Synchronize home property with location's home
+                            existingItem.home = (selectedLocation ?? location)?.home
                             existingItem.updatedAt = Date()
                             
                             // Call onSave with the existing (now updated) item

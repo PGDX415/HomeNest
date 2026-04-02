@@ -19,6 +19,9 @@ final class Item {
     @Relationship
     var location: StorageLocation?  // 所属位置（可选）
     
+    // 直接关联到家庭，提升查询性能
+    var home: Home?
+    
     init(name: String, quantity: Int = 1, location: StorageLocation? = nil, 
          details: String? = nil, value: Double? = nil, 
          purchaseDate: Date? = nil, expiryDate: Date? = nil,
@@ -26,6 +29,8 @@ final class Item {
         self.name = name
         self.quantity = quantity
         self.location = location
+        // Initialize home based on location's home if available
+        self.home = location?.home
         self.details = details
         self.value = value
         self.purchaseDate = purchaseDate

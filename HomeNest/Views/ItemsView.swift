@@ -37,11 +37,18 @@ struct ItemsView: View {
     
     // Helper function to safely get home name for an item
     private func getSafeHomeName(for item: Item) -> String? {
+        // Use direct home reference if available and valid
+        if let home = item.home,
+           validHomeIDs.contains(home.persistentModelID) {
+            return home.name
+        }
+        
+        // Fallback to location-based lookup for backward compatibility
         guard let location = item.location else {
             return nil
         }
         
-        // Check direct home reference first
+        // Check location's home
         if let home = location.home,
            validHomeIDs.contains(home.persistentModelID) {
             return home.name
