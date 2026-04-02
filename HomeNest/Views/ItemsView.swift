@@ -11,6 +11,8 @@ struct ItemsView: View {
     @State private var searchText = ""
     @State private var selectedCategory: String?
     @State private var showExpiringSoon = false
+    @State private var isBatchMode = false
+    @State private var selectedItems: Set<PersistentIdentifier> = []
     
     // Predefined categories matching AddItemSheet
     private let presetCategories = [
@@ -23,6 +25,7 @@ struct ItemsView: View {
     @State private var showingBiometricAlert = false
     @State private var biometricError: String = ""
     @State private var itemToDelete: Item?
+    @State private var itemsToDelete: [Item] = [] // For batch deletion
     
     init() {
         // Default query for all items sorted by name
@@ -173,8 +176,19 @@ struct ItemsView: View {
                     let homeGroup = itemsByHome[index]
                     Section(homeGroup.homeName ?? "未分类") {
                         ForEach(homeGroup.items, id: \.persistentModelID) { item in
-                            NavigationLink(destination: ItemDetailView(item: item)) {
-                                HStack {
+                            HStack {
+                                if isBatchMode {
+                                    // Batch mode: show selection checkbox
+                                    Button(action: {
+                                        toggleSelection(for: item)
+                                    }) {
+                                        Image(systemName: selectedItems.contains(item.persistentModelID) ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(selectedItems.contains(item.persistentModelID) ? .blue : .secondary)
+                                            .font(.title2)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                } else {
+                                    // Normal mode: show photo or placeholder
                                     if let photoData = item.photoData,
                                        let uiImage = UIImage(data: photoData) {
                                         Image(uiImage: uiImage)
@@ -188,40 +202,24 @@ struct ItemsView: View {
                                             .background(Color.secondary.opacity(0.1))
                                             .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(item.name)
-                                            .font(.headline)
-                                        
-                                        HStack {
-                                            if let location = item.location {
-                                                Text(location.name)
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            
-                                            if let category = item.category {
-                                                Text("• \(category)")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-                                        
-                                        if !item.tags.isEmpty {
-                                            HStack(spacing: 4) {
-                                                ForEach(item.tags.prefix(2), id: \.self) { tag in
-                                                    Text(tag)
-                                                        .font(.caption2)
-                                                        .padding(.horizontal, 6)
-                                                        .padding(.vertical, 2)
-                                                        .background(Color.blue.opacity(0.1))
-                                                        .foregroundColor(.blue)
-                                                        .cornerRadius(4)
-                                                }
-                                            }
-                                        }
+                                }
+                                
+                                if isBatchMode {
+                                    // Batch mode: use Button instead of NavigationLink
+                                    Button(action: {
+                                        toggleSelection(for: item)
+                                    }) {
+                                        itemContent(for: item)
                                     }
-                                    
+                                    .buttonStyle(PlainButtonStyle())
+                                } else {
+                                    // Normal mode: use NavigationLink
+                                    NavigationLink(destination: ItemDetailView(item: item)) {
+                                        itemContent(for: item)
+                                    }
+                                }
+                                
+                                if !isBatchMode {
                                     Spacer()
                                     
                                     Text("\(item.quantity)")
@@ -240,46 +238,95 @@ struct ItemsView: View {
                     }
                 }
             }
-            .navigationTitle("物品")
+            .navigationTitle(isBatchMode ? "选择物品 (\(selectedItems.count))" : "物品")
             .searchable(text: $searchText, prompt: "搜索物品、位置或标签")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        // Category filter
-                        Section("类别") {
+                // Batch mode toolbar items
+                if isBatchMode {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("取消") {
+                            exitBatchMode()
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
                             Button(action: {
-                                selectedCategory = nil
+                                selectAllVisibleItems()
                             }) {
-                                Label("全部", systemImage: selectedCategory == nil ? "checkmark" : "")
+                                Label("全选", systemImage: "checkmark.circle")
                             }
                             
-                            ForEach(categories, id: \.self) { category in
-                                Button(action: {
-                                    selectedCategory = category == selectedCategory ? nil : category
-                                }) {
-                                    Label(category, systemImage: category == selectedCategory ? "checkmark" : "")
+                            Button(action: {
+                                deselectAllItems()
+                            }) {
+                                Label("取消全选", systemImage: "circle")
+                            }
+                            
+                            Divider()
+                            
+                            if !selectedItems.isEmpty {
+                                Button(role: .destructive) {
+                                    prepareBatchDeletion()
+                                } label: {
+                                    Label("删除选中", systemImage: "trash")
                                 }
                             }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
-                        
-                        // Expiring soon filter
-                        Section {
+                        .disabled(selectedItems.isEmpty)
+                    }
+                } else {
+                    // Normal mode toolbar items
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        HStack {
                             Button(action: {
-                                showExpiringSoon.toggle()
+                                enterBatchMode()
                             }) {
-                                Label("即将过期", systemImage: showExpiringSoon ? "checkmark" : "")
+                                Image(systemName: "square.and.pencil")
+                                    .accessibilityLabel("批量操作")
+                            }
+                            .disabled(filteredItems.isEmpty)
+                            
+                            Menu {
+                                // Category filter
+                                Section("类别") {
+                                    Button(action: {
+                                        selectedCategory = nil
+                                    }) {
+                                        Label("全部", systemImage: selectedCategory == nil ? "checkmark" : "")
+                                    }
+                                    
+                                    ForEach(categories, id: \.self) { category in
+                                        Button(action: {
+                                            selectedCategory = category == selectedCategory ? nil : category
+                                        }) {
+                                            Label(category, systemImage: category == selectedCategory ? "checkmark" : "")
+                                        }
+                                    }
+                                }
+                                
+                                // Expiring soon filter
+                                Section {
+                                    Button(action: {
+                                        showExpiringSoon.toggle()
+                                    }) {
+                                        Label("即将过期", systemImage: showExpiringSoon ? "checkmark" : "")
+                                    }
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    showingAddItemSheet = true
+                                }) {
+                                    Label("添加物品", systemImage: "plus")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
                             }
                         }
-                        
-                        Divider()
-                        
-                        Button(action: {
-                            showingAddItemSheet = true
-                        }) {
-                            Label("添加物品", systemImage: "plus")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
@@ -291,6 +338,8 @@ struct ItemsView: View {
             .alert("🔒 安全验证", isPresented: $showingBiometricAlert) {
                 Button("取消", role: .cancel) {
                     showingBiometricAlert = false
+                    // Clear batch deletion state if cancelled
+                    itemsToDelete = []
                 }
             } message: {
                 Text(biometricError.isEmpty ? "请使用 Face ID 或 Touch ID 验证身份以继续删除操作。" : biometricError)
@@ -298,7 +347,129 @@ struct ItemsView: View {
         }
     }
     
-    // Biometric authentication function
+    // Helper function to create item content view
+    private func itemContent(for item: Item) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(item.name)
+                    .font(.headline)
+                
+                HStack {
+                    if let location = item.location {
+                        Text(location.name)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    if let category = item.category {
+                        Text("• \(category)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if !item.tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(item.tags.prefix(2), id: \.self) { tag in
+                            Text(tag)
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.1))
+                                .foregroundColor(.blue)
+                                .cornerRadius(4)
+                        }
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            if !isBatchMode {
+                Text("\(item.quantity)")
+                    .font(.headline)
+            }
+        }
+    }
+    
+    // Batch mode functions
+    private func enterBatchMode() {
+        isBatchMode = true
+        selectedItems.removeAll()
+    }
+    
+    private func exitBatchMode() {
+        isBatchMode = false
+        selectedItems.removeAll()
+        itemsToDelete = []
+    }
+    
+    private func toggleSelection(for item: Item) {
+        let id = item.persistentModelID
+        if selectedItems.contains(id) {
+            selectedItems.remove(id)
+        } else {
+            selectedItems.insert(id)
+        }
+    }
+    
+    private func selectAllVisibleItems() {
+        selectedItems = Set(filteredItems.map { $0.persistentModelID })
+    }
+    
+    private func deselectAllItems() {
+        selectedItems.removeAll()
+    }
+    
+    private func prepareBatchDeletion() {
+        // Get the actual Item objects for deletion
+        itemsToDelete = filteredItems.filter { selectedItems.contains($0.persistentModelID) }
+        if !itemsToDelete.isEmpty {
+            requestBiometricAuthenticationForBatch()
+        }
+    }
+    
+    private func requestBiometricAuthenticationForBatch() {
+        let context = LAContext()
+        var error: NSError?
+        
+        // Check if biometric authentication is available
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            let reason = "验证身份以删除 \(itemsToDelete.count) 个选中的物品"
+            
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
+                DispatchQueue.main.async {
+                    if success {
+                        // Authentication successful, proceed with batch deletion
+                        deleteSelectedItems()
+                    } else {
+                        // Authentication failed
+                        if let authError = authenticationError {
+                            handleBiometricError(authError)
+                        } else {
+                            biometricError = "身份验证失败，请重试。"
+                            showingBiometricAlert = true
+                        }
+                    }
+                }
+            }
+        } else {
+            // Biometric authentication not available
+            biometricError = "设备不支持 Face ID 或 Touch ID。请在设置中启用生物识别功能。"
+            showingBiometricAlert = true
+        }
+    }
+    
+    private func deleteSelectedItems() {
+        withAnimation {
+            for item in itemsToDelete {
+                modelContext.delete(item)
+            }
+        }
+        exitBatchMode()
+    }
+    
+    // Existing biometric functions (keeping them for single item deletion)
     private func requestBiometricAuthentication(for item: Item) {
         let context = LAContext()
         var error: NSError?
