@@ -10,12 +10,17 @@ import SwiftData
 
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appLockManager: AppLockManager
     @Query private var allHomes: [Home]
     @Query private var userProfiles: [UserProfile]
     
     // 应用版本信息
     @State private var appVersion: String = ""
     @State private var showingEditSheet = false
+    
+    // 应用锁定设置
+    @State private var appLockEnabled: Bool = false
+    @State private var selectedLockTimeout: AppLockManager.LockTimeout = .immediate
     
     var body: some View {
         List {
@@ -85,6 +90,32 @@ struct ProfileView: View {
                 NavigationLink(destination: TermsOfServiceView()) {
                     Label("用户协议", systemImage: "doc.text")
                 }
+                NavigationLink(destination: DataBackupView()) {
+                    Label("数据备份", systemImage: "icloud.and.arrow.down")
+                }
+            }
+            
+            // 安全与隐私区域
+            Section("安全与隐私") {
+                Toggle("应用锁定", isOn: $appLockEnabled)
+                    .onChange(of: appLockEnabled) { _, newValue in
+                        appLockManager.isAppLockEnabled = newValue
+                        if !newValue {
+                            appLockManager.unlockApp()
+                        }
+                    }
+                
+                if appLockEnabled {
+                    Picker("自动锁定", selection: $selectedLockTimeout) {
+                        ForEach(AppLockManager.LockTimeout.allCases, id: \.self) { timeout in
+                            Text(timeout.displayName).tag(timeout)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .onChange(of: selectedLockTimeout) { _, newValue in
+                        appLockManager.lockTimeout = newValue
+                    }
+                }
             }
             
             // 关于区域
@@ -104,6 +135,9 @@ struct ProfileView: View {
         .onAppear {
             loadAppVersion()
             ensureUserProfileExists()
+            // 初始化应用锁定设置
+            appLockEnabled = appLockManager.isAppLockEnabled
+            selectedLockTimeout = appLockManager.lockTimeout
         }
         .sheet(isPresented: $showingEditSheet) {
             EditUserProfileView(userProfile: userProfiles.first)

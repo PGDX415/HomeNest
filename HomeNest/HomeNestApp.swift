@@ -52,10 +52,19 @@ struct HomeNestApp: App {
             }
         }
     }()
+    
+    @StateObject private var appLockManager = AppLockManager.shared
 
     var body: some Scene {
         WindowGroup {
-            SplashView()
+            Group {
+                if appLockManager.shouldShowLockScreen {
+                    AppLockView()
+                } else {
+                    SplashView()
+                }
+            }
+            .environmentObject(appLockManager)
         }
         .modelContainer(sharedModelContainer)
     }
