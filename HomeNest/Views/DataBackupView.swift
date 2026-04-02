@@ -7,16 +7,23 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct DataBackupView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
     @State private var isExporting = false
+    @State private var isImporting = false
     @State private var exportSuccess = false
+    @State private var importSuccess = false
     @State private var exportError: String?
+    @State private var importError: String?
+    @State private var showFileExporter = false
+    @State private var showFileImporter = false
     @State private var showShareSheet = false
     @State private var exportedFileURL: URL?
+    @State private var importedItemCount = 0
     
     var body: some View {
         List {
@@ -27,7 +34,7 @@ struct DataBackupView: View {
                     Label("导出数据备份", systemImage: "arrow.down.doc")
                         .foregroundColor(.blue)
                 }
-                .disabled(isExporting)
+                .disabled(isExporting || isImporting)
                 
                 if isExporting {
                     HStack {
@@ -67,13 +74,52 @@ struct DataBackupView: View {
                 }
             }
             
+            Section("数据恢复") {
+                Button(action: {
+                    showFileImporter = true
+                }) {
+                    Label("从文件恢复数据", systemImage: "arrow.up.doc")
+                        .foregroundColor(.green)
+                }
+                .disabled(isExporting || isImporting)
+                
+                if isImporting {
+                    HStack {
+                        ProgressView()
+                        Text("正在恢复...")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if let errorMessage = importError {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.red)
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                }
+                
+                if importSuccess {
+                    HStack {
+                        Image(systemName: "checkmark.circle")
+                            .foregroundColor(.green)
+                        Text("成功恢复 \(importedItemCount) 项数据！")
+                            .font(.subheadline)
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            
             Section("说明") {
                 Text("备份文件包含所有场所、位置、物品和个人信息。点击备份成功的文件可以分享或保存到「文件」App中。")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("⚠️ 注意：目前仅支持导出功能，导入功能将在后续版本中实现。")
+                Text("⚠️ 恢复数据会覆盖现有数据，请谨慎操作。建议先备份当前数据再进行恢复。")
                     .font(.caption)
                     .foregroundColor(.orange)
                     .fixedSize(horizontal: false, vertical: true)
@@ -93,6 +139,22 @@ struct DataBackupView: View {
                 ShareSheet(items: [fileURL])
             }
         }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let fileURL = urls.first {
+                    importData(from: fileURL)
+                }
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.importError = "选择文件失败: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     private func exportData() {
@@ -110,6 +172,26 @@ struct DataBackupView: View {
                     self.exportSuccess = true
                 case .failure(let error):
                     self.exportError = "导出失败: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func importData(from fileURL: URL) {
+        isImporting = true
+        importSuccess = false
+        importError = nil
+        
+        DataBackupManager.shared.importDataFromJSON(fileURL: fileURL, context: modelContext) { result in
+            DispatchQueue.main.async {
+                self.isImporting = false
+                
+                switch result {
+                case .success(let itemCount):
+                    self.importedItemCount = itemCount
+                    self.importSuccess = true
+                case .failure(let error):
+                    self.importError = "恢复失败: \(error.localizedDescription)"
                 }
             }
         }
