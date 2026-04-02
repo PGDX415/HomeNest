@@ -40,7 +40,7 @@ struct ProfileView: View {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 32, height: 32)
+                                    .frame(width: 64, height: 64)
                                     .clipShape(Circle())
                             } else {
                                 Image(systemName: "person.circle.fill")
