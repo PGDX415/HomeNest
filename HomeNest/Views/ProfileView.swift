@@ -91,6 +91,9 @@ struct ProfileView: View {
                 NavigationLink(destination: HelpAndSupportView()) {
                     Label("帮助与支持", systemImage: "questionmark.circle.fill")
                 }
+                NavigationLink(destination: AdvancedStatisticsView()) {
+                    Label("高级统计", systemImage: "chart.bar")
+                }
                 NavigationLink(destination: PrivacyPolicyView()) {
                     Label("隐私政策", systemImage: "lock.shield")
                 }
