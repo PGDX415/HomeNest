@@ -68,6 +68,32 @@ final class Home {
         }
     }
     
+    // 计算场所的总位置数量（包括所有子位置）
+    func getTotalLocationCount() -> Int {
+        var totalCount = 0
+        
+        // 限制递归深度以防止无限循环（最大10层）
+        func countLocationsInLocation(_ location: StorageLocation, depth: Int = 0) -> Int {
+            guard depth < 10 else { return 0 }
+            
+            var count = 1 // Count this location
+            
+            // 递归计算子位置的数量
+            for subLocation in location.subLocations {
+                count += countLocationsInLocation(subLocation, depth: depth + 1)
+            }
+            
+            return count
+        }
+        
+        // 计算所有根位置及其子位置的数量
+        for location in locations {
+            totalCount += countLocationsInLocation(location)
+        }
+        
+        return totalCount
+    }
+    
     // 计算场所的总物品数量（包括所有子位置的物品）
     func totalItemCount() -> Int {
         var totalCount = 0

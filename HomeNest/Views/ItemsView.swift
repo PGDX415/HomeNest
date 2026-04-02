@@ -30,42 +30,54 @@ struct ItemsView: View {
         _homes = Query(sort: \Home.name) // Added query for homes
     }
     
+    // Get valid home IDs to ensure we only reference existing homes
+    private var validHomeIDs: Set<PersistentIdentifier> {
+        Set(homes.map { $0.persistentModelID })
+    }
+    
     // Helper function to safely get home name for an item
-    private func getHomeName(for item: Item) -> String? {
-        // First check if location exists and is valid
+    private func getSafeHomeName(for item: Item) -> String? {
         guard let location = item.location else {
             return nil
         }
         
-        // Check if home exists and is valid  
-        guard let home = location.home else {
-            return nil
+        // Check direct home reference first
+        if let home = location.home,
+           validHomeIDs.contains(home.persistentModelID) {
+            return home.name
         }
         
-        // Try to access home name - if this crashes, the home is invalid
-        // But we can't catch this, so we rely on the fact that if home is in @Query,
-        // it should be valid
-        return home.name
-    }
-    
-    // Get valid home IDs from the homes query
-    private var validHomeIDs: Set<PersistentIdentifier> {
-        Set(homes.map { $0.persistentModelID })
+        // Recursively check parent locations, but only access properties safely
+        var currentLocation: StorageLocation? = location.parent
+        var depth = 0
+        
+        while let current = currentLocation, depth < 10 {
+            // Only access home if it exists in our valid set
+            if let home = current.home,
+               validHomeIDs.contains(home.persistentModelID) {
+                return home.name
+            }
+            currentLocation = current.parent
+            depth += 1
+        }
+        
+        return nil
     }
     
     // Filtered items based on search and filters
     var filteredItems: [Item] {
         var filtered = items
         
-        // Filter out items that reference invalid homes
+        // First, filter out items that reference invalid homes through any path
         filtered = filtered.filter { item in
-            if let location = item.location,
-               let home = location.home {
-                // Only include if home is still in our valid homes list
-                return validHomeIDs.contains(home.persistentModelID)
+            // If item has no location, it's unclassified (valid)
+            guard let location = item.location else {
+                return true
             }
-            // Items without home or location are always valid
-            return true
+            
+            // Check if this item can be associated with a valid home
+            let homeName = getSafeHomeName(for: item)
+            return homeName != nil || location.home == nil
         }
         
         // Apply search filter
@@ -78,12 +90,10 @@ struct ItemsView: View {
                 }
                 let matchesLocation = item.location?.name.localizedCaseInsensitiveContains(searchText) ?? false
                 
-                // For home matching, only match if home is valid
+                // For home matching, use safe lookup
                 var matchesHome = false
-                if let location = item.location,
-                   let home = location.home,
-                   validHomeIDs.contains(home.persistentModelID) {
-                    matchesHome = home.name.localizedCaseInsensitiveContains(searchText)
+                if let homeName = getSafeHomeName(for: item) {
+                    matchesHome = homeName.localizedCaseInsensitiveContains(searchText)
                 }
                 
                 return matchesName || matchesCategory || matchesTags || matchesLocation || matchesHome
@@ -116,18 +126,9 @@ struct ItemsView: View {
     var itemsByHome: [(homeName: String?, items: [Item])] {
         var grouped: [String?: [Item]] = [:]
         
-        // Group filtered items by their home name (not home object)
+        // Group filtered items by their home name using safe lookup
         for item in filteredItems {
-            let homeName: String?
-            
-            if let location = item.location,
-               let home = location.home,
-               validHomeIDs.contains(home.persistentModelID) {
-                homeName = home.name
-            } else {
-                homeName = nil
-            }
-            
+            let homeName = getSafeHomeName(for: item)
             grouped[homeName, default: []].append(item)
         }
         

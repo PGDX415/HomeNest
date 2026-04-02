@@ -12,6 +12,8 @@ import LocalAuthentication // Added for biometric authentication
 struct PlacesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allPlaces: [Home]
+    @Query private var allItems: [Item]
+    @Query private var allLocations: [StorageLocation]
     
     @State private var showingAddPlaceSheet = false
     
@@ -27,37 +29,82 @@ struct PlacesView: View {
                         // Use safe icon handling method to avoid empty string warnings
                         Image(systemName: place.getSafeIconName())
                             .foregroundColor(place.getIconColor())
+                            .font(.title2)
+                            .frame(width: 40, height: 40)
+                            .background(
+                                Circle()
+                                    .fill(place.getIconColor().opacity(0.1))
+                            )
+                            .clipShape(Circle())
                         
-                        VStack(alignment: .leading) {
-                            Text(place.name)
-                                .font(.headline)
-                            if let address = place.address {
-                                Text(address)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(place.name)
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                
+                                if place.isPrimary {
+                                    Text("主")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(Color.blue.opacity(0.15))
+                                        .foregroundColor(.blue)
+                                        .cornerRadius(4)
+                                }
                             }
                             
-                            // 显示物品数量
-                            let itemCount = place.totalItemCount()
-                            if itemCount > 0 {
-                                Text("\(itemCount) 个物品")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                            if let address = place.address {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "mappin.and.ellipse")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                    Text(address)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            
+                            // 统计信息行 - 使用独立查询确保准确性
+                            HStack(spacing: 12) {
+                                // 简化逻辑：只显示物品总数，因为这是最关键的指标
+                                let itemCount = getItemCount(for: place)
+                                
+                                if itemCount > 0 {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "list.bullet.rectangle")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                        Text("\(itemCount) 个物品")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                } else {
+                                    // 检查是否有位置（即使没有物品）
+                                    let locationCount = getLocationCount(for: place)
+                                    if locationCount > 0 {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "folder.fill")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                            Text("\(locationCount) 个位置")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    } else {
+                                        Text("暂无数据")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
                             }
                         }
                         
                         Spacer()
-                        
-                        if place.isPrimary {
-                            Text("主")
-                                .font(.caption)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .foregroundColor(.blue)
-                                .cornerRadius(4)
-                        }
                     }
+                    .padding(.vertical, 8)
                 }
             }
             .onDelete(perform: deletePlaces)
@@ -147,6 +194,73 @@ struct PlacesView: View {
             modelContext.delete(place)
         }
         placeToDelete = nil
+    }
+    
+    // Helper function to get accurate item count for a place using independent query
+    private func getItemCount(for place: Home) -> Int {
+        // Count all items that belong to locations associated with this place
+        var totalCount = 0
+        
+        for location in allLocations {
+            // Check if this location belongs to the place (directly or through parent chain)
+            if isLocationInPlace(location, place: place) {
+                totalCount += location.items.count
+                
+                // Add items from sub-locations
+                totalCount += getItemsInSubLocations(of: location)
+            }
+        }
+        
+        return totalCount
+    }
+    
+    // Helper function to get items in all sub-locations recursively
+    private func getItemsInSubLocations(of location: StorageLocation) -> Int {
+        var count = 0
+        
+        for subLocation in allLocations {
+            if subLocation.parent?.persistentModelID == location.persistentModelID {
+                count += subLocation.items.count
+                count += getItemsInSubLocations(of: subLocation)
+            }
+        }
+        
+        return count
+    }
+    
+    // Helper function to check if a location belongs to a specific place
+    private func isLocationInPlace(_ location: StorageLocation, place: Home) -> Bool {
+        // Direct association
+        if let locationHome = location.home,
+           locationHome.persistentModelID == place.persistentModelID {
+            return true
+        }
+        
+        // Check parent chain for home association
+        var currentLocation: StorageLocation? = location.parent
+        var depth = 0
+        
+        while let current = currentLocation, depth < 10 {
+            if let parentHome = current.home,
+               parentHome.persistentModelID == place.persistentModelID {
+                return true
+            }
+            currentLocation = current.parent
+            depth += 1
+        }
+        
+        return false
+    }
+    
+    // Helper function to get accurate location count for a place
+    private func getLocationCount(for place: Home) -> Int {
+        var count = 0
+        for location in allLocations {
+            if isLocationInPlace(location, place: place) {
+                count += 1
+            }
+        }
+        return count
     }
     
     // Biometric authentication function

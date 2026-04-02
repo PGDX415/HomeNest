@@ -92,6 +92,23 @@ struct HomeNestApp: App {
                     cleanedCount += 1
                     print("🧹 Cleaned empty icon for Location: \(location.name)")
                 }
+                
+                // 修复 StorageLocation 的 home 属性
+                if location.home == nil {
+                    // 尝试从父位置继承 home
+                    var currentLocation: StorageLocation? = location.parent
+                    var depth = 0
+                    
+                    while let current = currentLocation, depth < 10 {
+                        if let parentHome = current.home {
+                            location.home = parentHome
+                            print("🔧 Fixed home reference for Location: \(location.name)")
+                            break
+                        }
+                        currentLocation = current.parent
+                        depth += 1
+                    }
+                }
             }
         } catch {
             print("⚠️ Failed to clean StorageLocation icons: \(error)")
