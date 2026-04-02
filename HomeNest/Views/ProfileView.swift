@@ -88,6 +88,9 @@ struct ProfileView: View {
                 NavigationLink(destination: UsageGuideView()) {
                     Label("使用说明", systemImage: "questionmark.circle")
                 }
+                NavigationLink(destination: HelpAndSupportView()) {
+                    Label("帮助与支持", systemImage: "questionmark.circle.fill")
+                }
                 NavigationLink(destination: PrivacyPolicyView()) {
                     Label("隐私政策", systemImage: "lock.shield")
                 }
