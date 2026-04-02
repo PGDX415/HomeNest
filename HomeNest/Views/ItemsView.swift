@@ -30,26 +30,71 @@ struct ItemsView: View {
         _homes = Query(sort: \Home.name) // Added query for homes
     }
     
+    // Helper function to safely get home name for an item
+    private func getHomeName(for item: Item) -> String? {
+        // First check if location exists and is valid
+        guard let location = item.location else {
+            return nil
+        }
+        
+        // Check if home exists and is valid  
+        guard let home = location.home else {
+            return nil
+        }
+        
+        // Try to access home name - if this crashes, the home is invalid
+        // But we can't catch this, so we rely on the fact that if home is in @Query,
+        // it should be valid
+        return home.name
+    }
+    
+    // Get valid home IDs from the homes query
+    private var validHomeIDs: Set<PersistentIdentifier> {
+        Set(homes.map { $0.persistentModelID })
+    }
+    
     // Filtered items based on search and filters
     var filteredItems: [Item] {
         var filtered = items
         
+        // Filter out items that reference invalid homes
+        filtered = filtered.filter { item in
+            if let location = item.location,
+               let home = location.home {
+                // Only include if home is still in our valid homes list
+                return validHomeIDs.contains(home.persistentModelID)
+            }
+            // Items without home or location are always valid
+            return true
+        }
+        
         // Apply search filter
         if !searchText.isEmpty {
             filtered = filtered.filter { item in
-                item.name.localizedCaseInsensitiveContains(searchText) ||
-                (item.category?.localizedCaseInsensitiveContains(searchText) ?? false) ||
-                item.tags.contains { tag in
+                let matchesName = item.name.localizedCaseInsensitiveContains(searchText)
+                let matchesCategory = item.category?.localizedCaseInsensitiveContains(searchText) ?? false
+                let matchesTags = item.tags.contains { tag in
                     tag.localizedCaseInsensitiveContains(searchText)
-                } ||
-                (item.location?.name.localizedCaseInsensitiveContains(searchText) ?? false) ||
-                (item.location?.home?.name.localizedCaseInsensitiveContains(searchText) ?? false)
+                }
+                let matchesLocation = item.location?.name.localizedCaseInsensitiveContains(searchText) ?? false
+                
+                // For home matching, only match if home is valid
+                var matchesHome = false
+                if let location = item.location,
+                   let home = location.home,
+                   validHomeIDs.contains(home.persistentModelID) {
+                    matchesHome = home.name.localizedCaseInsensitiveContains(searchText)
+                }
+                
+                return matchesName || matchesCategory || matchesTags || matchesLocation || matchesHome
             }
         }
         
         // Apply category filter
         if let category = selectedCategory {
-            filtered = filtered.filter { $0.category == category }
+            filtered = filtered.filter { item in
+                return item.category == category
+            }
         }
         
         // Apply expiring soon filter
@@ -67,29 +112,38 @@ struct ItemsView: View {
         return filtered
     }
     
-    // Group items by home
-    var itemsByHome: [(home: Home?, items: [Item])] {
-        var grouped: [Home?: [Item]] = [:]
+    // Group items by home using safe approach
+    var itemsByHome: [(homeName: String?, items: [Item])] {
+        var grouped: [String?: [Item]] = [:]
         
-        // Group filtered items by their home
+        // Group filtered items by their home name (not home object)
         for item in filteredItems {
-            let home = item.location?.home
-            grouped[home, default: []].append(item)
+            let homeName: String?
+            
+            if let location = item.location,
+               let home = location.home,
+               validHomeIDs.contains(home.persistentModelID) {
+                homeName = home.name
+            } else {
+                homeName = nil
+            }
+            
+            grouped[homeName, default: []].append(item)
         }
         
         // Convert to array and sort - nil homes (unclassified) come first
-        var result = grouped.map { (home: $0.key, items: $0.value) }
+        var result = grouped.map { (homeName: $0.key, items: $0.value) }
         result.sort { (group1, group2) in
             // Items without home come first
-            if group1.home == nil && group2.home != nil {
+            if group1.homeName == nil && group2.homeName != nil {
                 return true
             }
-            if group1.home != nil && group2.home == nil {
+            if group1.homeName != nil && group2.homeName == nil {
                 return false
             }
             // Both have homes, sort by name
-            if let home1 = group1.home, let home2 = group2.home {
-                return home1.name < home2.name
+            if let name1 = group1.homeName, let name2 = group2.homeName {
+                return name1 < name2
             }
             // Both are nil
             return false
@@ -100,7 +154,7 @@ struct ItemsView: View {
     
     // Get unique categories for filtering
     var categories: [String] {
-        Array(Set(items.compactMap { $0.category }))
+        Array(Set(filteredItems.compactMap { $0.category }))
             .sorted()
     }
     
@@ -109,7 +163,7 @@ struct ItemsView: View {
             List {
                 ForEach(itemsByHome.indices, id: \.self) { index in
                     let homeGroup = itemsByHome[index]
-                    Section(homeGroup.home?.name ?? "未分类") {
+                    Section(homeGroup.homeName ?? "未分类") {
                         ForEach(homeGroup.items, id: \.persistentModelID) { item in
                             NavigationLink(destination: ItemDetailView(item: item)) {
                                 HStack {

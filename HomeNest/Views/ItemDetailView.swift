@@ -63,7 +63,11 @@ struct ItemDetailView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         HStack {
-                            Image(systemName: location.getSafeIconName())
+                            if let icon = location.icon {
+                                Image(systemName: icon)
+                            } else {
+                                Image(systemName: "folder.fill")
+                            }
                             Text(locationPath(for: location))
                         }
                     }

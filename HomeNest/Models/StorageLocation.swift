@@ -36,7 +36,8 @@ final class StorageLocation {
         self.type = type
         self.parent = parent
         self.home = home
-        self.icon = icon
+        // Ensure icon is never empty string
+        self.icon = (icon?.isEmpty == true) ? nil : icon
         self.iconColor = iconColor
         self.isFavorite = isFavorite
     }
@@ -69,19 +70,12 @@ final class StorageLocation {
         }
     }
     
-    // 安全获取图标名称，确保返回有效的SF Symbols名称
+    // 安全获取图标名称，避免空字符串导致的警告
     func getSafeIconName() -> String {
-        guard let iconName = icon else {
+        guard let icon = self.icon, !icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return "folder.fill"
         }
-        
-        let trimmedIcon = iconName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedIcon.isEmpty {
-            // 调试：打印空图标信息
-            print("⚠️ StorageLocation '\(name)' has empty icon string: '\(iconName)'")
-            return "folder.fill"
-        }
-        return trimmedIcon
+        return icon.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     // 计算位置的总物品数量（包括所有子位置的物品）

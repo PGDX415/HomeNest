@@ -24,6 +24,7 @@ struct PlacesView: View {
             ForEach(allPlaces, id: \.persistentModelID) { place in
                 NavigationLink(destination: LocationsView(home: place)) {
                     HStack {
+                        // Use safe icon handling method to avoid empty string warnings
                         Image(systemName: place.getSafeIconName())
                             .foregroundColor(place.getIconColor())
                         

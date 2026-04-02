@@ -6,52 +6,40 @@ struct AddItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    // Predefined categories for home inventory
-    private let presetCategories = [
-        "家电电器", "厨房用品", "衣物鞋帽", "书籍文具",
-        "食品饮品", "清洁用品", "医药保健", "装饰摆件",
-        "工具设备", "其他杂物"
-    ]
+    let location: StorageLocation?
+    let existingItem: Item?  // Added to support editing existing items
+    let onSave: (Item) -> Void
     
-    // Item properties
-    @State private var name: String = ""
-    @State private var quantity: Int = 1
-    @State private var category: String = ""  // Selected category
-    @State private var details: String = ""
-    @State private var value: Double?  // Changed to Double?
+    @State private var name = ""
+    @State private var quantity = 1
+    @State private var descriptionText = ""  // This is the UI field name, not the model property
+    @State private var value: Double?
     @State private var purchaseDate: Date?
     @State private var expiryDate: Date?
-    @State private var tagsText: String = ""  // For tag input
-    
-    // Location selection
+    @State private var category = ""
+    @State private var tagsText = ""
     @State private var selectedLocation: StorageLocation?
-    let location: StorageLocation?  // Pre-selected location (for adding item to specific location)
     
-    // Photo handling
-    @State private var photoData: Data?
-    @State private var showingImagePicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var photoData: Data?
     
-    // Existing item reference (for edit mode)
-    let existingItem: Item?
+    // Predefined categories
+    private let predefinedCategories = ["家电", "衣物", "书籍", "厨房", "食品", "工具", "装饰", "其他"]
     
-    // Completion handler
-    let onAdd: (Item) -> Void
-    
-    init(location: StorageLocation?, existingItem: Item? = nil, onAdd: @escaping (Item) -> Void) {
+    init(location: StorageLocation?, existingItem: Item? = nil, onSave: @escaping (Item) -> Void) {
         self.location = location
         self.existingItem = existingItem
-        self.onAdd = onAdd
+        self.onSave = onSave
         
-        // Initialize with existing item data if in edit mode
+        // Initialize state variables if editing an existing item
         if let existingItem = existingItem {
             _name = State(initialValue: existingItem.name)
             _quantity = State(initialValue: existingItem.quantity)
-            _category = State(initialValue: existingItem.category ?? "")
-            _details = State(initialValue: existingItem.details ?? "")
+            _descriptionText = State(initialValue: existingItem.details ?? "")
             _value = State(initialValue: existingItem.value)
             _purchaseDate = State(initialValue: existingItem.purchaseDate)
             _expiryDate = State(initialValue: existingItem.expiryDate)
+            _category = State(initialValue: existingItem.category ?? "")
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
             _selectedLocation = State(initialValue: existingItem.location)
@@ -66,13 +54,16 @@ struct AddItemSheet: View {
                     
                     Stepper("数量: \(quantity)", value: $quantity, in: 1...999)
                     
-                    TextField("描述", text: $details)
+                    TextField("描述", text: $descriptionText)
                 }
                 
                 Section("分类与标签") {
                     Picker("类别", selection: $category) {
-                        Text("未分类").tag("")
-                        ForEach(presetCategories, id: \.self) { category in
+                        Text("无").tag("")
+                        ForEach(predefinedCategories, id: \.self) { cat in
+                            Text(cat).tag(cat)
+                        }
+                        if !predefinedCategories.contains(category) && !category.isEmpty {
                             Text(category).tag(category)
                         }
                     }
@@ -80,7 +71,6 @@ struct AddItemSheet: View {
                     
                     TextField("标签 (用逗号分隔)", text: $tagsText)
                         .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
                 }
                 
                 Section("价值与日期") {
@@ -112,15 +102,12 @@ struct AddItemSheet: View {
                         let currentLocation = selectedLocation ?? location
                         if let loc = currentLocation {
                             HStack {
-                                Image(systemName: loc.getSafeIconName())
-                                VStack(alignment: .leading) {
-                                    Text(loc.name)
-                                        .font(.headline)
-                                    Text(getLocationPath(for: loc))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(2)
+                                if let icon = loc.icon {
+                                    Image(systemName: icon)
+                                } else {
+                                    Image(systemName: "folder.fill")
                                 }
+                                Text(loc.name)
                                 Spacer()
                                 Text(loc.type.rawValue)
                                     .font(.caption)
@@ -173,15 +160,14 @@ struct AddItemSheet: View {
                     Button("保存") {
                         guard !name.isEmpty else { return }
                         
-                        let tags = tagsText.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }.filter { !$0.isEmpty }
-                        let numericValue = value
+                        let tags = tagsText.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespaces)) }
                         
                         if let existingItem = existingItem {
                             // Update existing item directly - no new item creation
                             existingItem.name = name
                             existingItem.quantity = quantity
-                            existingItem.details = details.isEmpty ? nil : details
-                            existingItem.value = numericValue
+                            existingItem.details = descriptionText.isEmpty ? nil : descriptionText
+                            existingItem.value = value
                             existingItem.purchaseDate = purchaseDate
                             existingItem.expiryDate = expiryDate
                             existingItem.category = category.isEmpty ? nil : category
@@ -191,15 +177,15 @@ struct AddItemSheet: View {
                             existingItem.updatedAt = Date()
                             
                             // Call onSave with the existing (now updated) item
-                            onAdd(existingItem)
+                            onSave(existingItem)
                         } else {
                             // Create new item for add mode
                             let newItem = Item(
                                 name: name,
                                 quantity: quantity,
                                 location: selectedLocation ?? location,
-                                details: details.isEmpty ? nil : details,
-                                value: numericValue,
+                                details: descriptionText.isEmpty ? nil : descriptionText,
+                                value: value,
                                 purchaseDate: purchaseDate,
                                 expiryDate: expiryDate,
                                 category: category.isEmpty ? nil : category,
@@ -207,9 +193,8 @@ struct AddItemSheet: View {
                                 photoData: photoData
                             )
                             
-                            onAdd(newItem)
+                            onSave(newItem)
                         }
-                        
                         dismiss()
                     }
                     .disabled(name.isEmpty)
@@ -237,22 +222,6 @@ struct AddItemSheet: View {
         // Convert to JPEG with specified quality
         return image.jpegData(compressionQuality: quality)
     }
-    
-    // Helper function to get full location path - with nil safety and depth limit
-    func getLocationPath(for location: StorageLocation) -> String {
-        var pathComponents: [String] = [location.name]
-        var currentLocation: StorageLocation? = location.parent
-        
-        // Limit depth to prevent infinite loops (max 10 levels)
-        var depth = 0
-        while let current = currentLocation, depth < 10 {
-            pathComponents.insert(current.name, at: 0)
-            currentLocation = current.parent
-            depth += 1
-        }
-        
-        return pathComponents.joined(separator: " > ")
-    }
 }
 
 // Simple location picker view - FLAT LIST APPROACH
@@ -265,7 +234,7 @@ struct LocationPickerView: View {
     }
     
     // Helper function to get full location path - with nil safety and depth limit
-    func getLocationPath(for location: StorageLocation) -> String {
+    func locationPath(for location: StorageLocation) -> String {
         var pathComponents: [String] = [location.name]
         var currentLocation: StorageLocation? = location.parent
         
@@ -287,11 +256,15 @@ struct LocationPickerView: View {
                     selectedLocation = location
                 }) {
                     HStack {
-                        Image(systemName: location.getSafeIconName())
+                        if let icon = location.icon, !icon.isEmpty {
+                            Image(systemName: icon)
+                        } else {
+                            Image(systemName: "folder.fill")
+                        }
                         VStack(alignment: .leading) {
                             Text(location.name)
                                 .font(.headline)
-                            Text(getLocationPath(for: location))
+                            Text(locationPath(for: location))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .lineLimit(2)

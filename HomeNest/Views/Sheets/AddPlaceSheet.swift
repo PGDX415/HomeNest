@@ -33,7 +33,7 @@ struct AddPlaceSheet: View {
     @State private var showingIconPicker = false
     @State private var showingColorPicker = false
     
-    // 预定义的常用场所图标（修正了无效的SF Symbols）
+    // 预定义的常用场所图标
     private let placeIcons = [
         PlaceIconOption("house.fill", "住宅"),
         PlaceIconOption("building.2.fill", "公寓"),
@@ -46,7 +46,7 @@ struct AddPlaceSheet: View {
         PlaceIconOption("lock.fill", "保险箱"),
         PlaceIconOption("suitcase.fill", "旅行箱"),
         PlaceIconOption("folder.fill", "文件夹"),
-        PlaceIconOption("mappin", "位置"),
+        PlaceIconOption("location.fill", "位置"),
         PlaceIconOption("tag.fill", "标签"),
         PlaceIconOption("photo.fill", "照片")
     ]
@@ -190,7 +190,7 @@ struct IconPickerView: View {
     @Binding var selectedIcon: String
     let onDismiss: () -> Void
     
-    // 预定义的常用场所图标（修正了无效的SF Symbols）
+    // 预定义的常用场所图标
     private let placeIcons = [
         PlaceIconOption("house.fill", "住宅"),
         PlaceIconOption("building.2.fill", "公寓"),
@@ -203,7 +203,7 @@ struct IconPickerView: View {
         PlaceIconOption("lock.fill", "保险箱"),
         PlaceIconOption("suitcase.fill", "旅行箱"),
         PlaceIconOption("folder.fill", "文件夹"),
-        PlaceIconOption("mappin", "位置"),
+        PlaceIconOption("location.fill", "位置"),
         PlaceIconOption("tag.fill", "标签"),
         PlaceIconOption("photo.fill", "照片")
     ]

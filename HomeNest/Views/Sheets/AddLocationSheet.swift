@@ -29,13 +29,13 @@ struct AddLocationSheet: View {
     @State private var showingIconPicker = false
     @State private var showingColorPicker = false
     
-    // 预定义的常用位置图标（使用确认存在的SF Symbols）
+    // 预定义的常用位置图标
     private let locationIcons = [
         LocationIconOption("folder.fill", "文件夹"),
         LocationIconOption("house.fill", "房间"),
-        LocationIconOption("tray.fill", "柜子"),
-        LocationIconOption("books.vertical.fill", "架子"),
-        LocationIconOption("cube.box.fill", "箱子"),
+        LocationIconOption("cabinet.fill", "柜子"),
+        LocationIconOption("shelf.fill", "架子"),
+        LocationIconOption("box.fill", "箱子"),
         LocationIconOption("archivebox.fill", "抽屉"),
         LocationIconOption("suitcase.fill", "行李箱"),
         LocationIconOption("cart.fill", "购物车"),
@@ -43,7 +43,7 @@ struct AddLocationSheet: View {
         LocationIconOption("lock.fill", "保险箱"),
         LocationIconOption("photo.fill", "相册"),
         LocationIconOption("tag.fill", "标签"),
-        LocationIconOption("mappin", "位置"),
+        LocationIconOption("location.fill", "位置"),
         LocationIconOption("doc.fill", "文档")
     ]
     
@@ -257,13 +257,13 @@ struct LocationIconPickerView: View {
     @Binding var selectedIcon: String
     let onDismiss: () -> Void
     
-    // 预定义的常用位置图标（使用确认存在的SF Symbols）
+    // 预定义的常用位置图标
     private let locationIcons = [
         LocationIconOption("folder.fill", "文件夹"),
         LocationIconOption("house.fill", "房间"),
-        LocationIconOption("tray.fill", "柜子"),
-        LocationIconOption("books.vertical.fill", "架子"),
-        LocationIconOption("cube.box.fill", "箱子"),
+        LocationIconOption("cabinet.fill", "柜子"),
+        LocationIconOption("shelf.fill", "架子"),
+        LocationIconOption("box.fill", "箱子"),
         LocationIconOption("archivebox.fill", "抽屉"),
         LocationIconOption("suitcase.fill", "行李箱"),
         LocationIconOption("cart.fill", "购物车"),
@@ -271,7 +271,7 @@ struct LocationIconPickerView: View {
         LocationIconOption("lock.fill", "保险箱"),
         LocationIconOption("photo.fill", "相册"),
         LocationIconOption("tag.fill", "标签"),
-        LocationIconOption("mappin", "位置"),
+        LocationIconOption("location.fill", "位置"),
         LocationIconOption("doc.fill", "文档")
     ]
     

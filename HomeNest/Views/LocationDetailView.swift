@@ -36,9 +36,15 @@ struct LocationDetailView: View {
                     // Location info section
                     Section("位置信息") {
                         HStack {
-                            Image(systemName: safeLocation.getSafeIconName())
-                                .font(.title2)
-                                .foregroundColor(.primary)
+                            if let icon = safeLocation.icon, !icon.isEmpty {
+                                Image(systemName: icon)
+                                    .font(.title2)
+                                    .foregroundColor(.primary)
+                            } else {
+                                Image(systemName: "folder.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.primary)
+                            }
                             
                             VStack(alignment: .leading) {
                                 Text(safeLocation.name)
@@ -58,7 +64,11 @@ struct LocationDetailView: View {
                             ForEach(subLocations, id: \.persistentModelID) { subLocation in
                                 NavigationLink(destination: LocationDetailView(location: subLocation)) {
                                     HStack {
-                                        Image(systemName: subLocation.getSafeIconName())
+                                        if let icon = subLocation.icon, !icon.isEmpty {
+                                            Image(systemName: icon)
+                                        } else {
+                                            Image(systemName: "folder.fill")
+                                        }
                                         Text(subLocation.name)
                                         Spacer()
                                         Text(subLocation.type.rawValue)
