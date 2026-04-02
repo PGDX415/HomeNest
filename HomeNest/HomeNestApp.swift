@@ -15,6 +15,7 @@ struct HomeNestApp: App {
             Item.self,
             StorageLocation.self,
             Home.self,
+            UserProfile.self,
         ])
         
         // Configure for CloudKit sync with proper settings

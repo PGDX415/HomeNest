@@ -45,8 +45,7 @@ struct ContentView: View {
             
             // Profile Tab
             NavigationStack {
-                Text("Profile View - 我的")
-                    .navigationTitle("我")
+                ProfileView()
             }
             .tabItem {
                 Label("我", systemImage: "person.fill")
