@@ -54,6 +54,7 @@ struct HomeNestApp: App {
     }()
     
     @StateObject private var appLockManager = AppLockManager.shared
+    @StateObject private var themeManager = ThemeManager.shared
 
     var body: some Scene {
         WindowGroup {
@@ -61,10 +62,12 @@ struct HomeNestApp: App {
                 if appLockManager.shouldShowLockScreen {
                     AppLockView()
                 } else {
-                    SplashView()
+                    ContentView()
                 }
             }
             .environmentObject(appLockManager)
+            .environmentObject(themeManager)
+            .environment(\.colorScheme, themeManager.getCurrentColorScheme() ?? .light)
         }
         .modelContainer(sharedModelContainer)
     }

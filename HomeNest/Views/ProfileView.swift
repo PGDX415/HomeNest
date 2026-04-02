@@ -11,6 +11,7 @@ import SwiftData
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appLockManager: AppLockManager
+    @EnvironmentObject private var themeManager: ThemeManager
     @Query private var allHomes: [Home]
     @Query private var userProfiles: [UserProfile]
     
@@ -21,6 +22,9 @@ struct ProfileView: View {
     // 应用锁定设置
     @State private var appLockEnabled: Bool = false
     @State private var selectedLockTimeout: AppLockManager.LockTimeout = .immediate
+    
+    // 应用主题设置
+    @State private var selectedTheme: ThemeManager.AppTheme = .system
     
     var body: some View {
         List {
@@ -118,6 +122,19 @@ struct ProfileView: View {
                 }
             }
             
+            // 应用设置区域
+            Section("应用设置") {
+                Picker("应用主题", selection: $selectedTheme) {
+                    ForEach(ThemeManager.AppTheme.allCases, id: \.self) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                .onChange(of: selectedTheme) { _, newValue in
+                    themeManager.currentTheme = newValue
+                }
+            }
+            
             // 关于区域
             Section("关于") {
                 HStack {
@@ -138,6 +155,8 @@ struct ProfileView: View {
             // 初始化应用锁定设置
             appLockEnabled = appLockManager.isAppLockEnabled
             selectedLockTimeout = appLockManager.lockTimeout
+            // 初始化主题设置
+            selectedTheme = themeManager.currentTheme
         }
         .sheet(isPresented: $showingEditSheet) {
             EditUserProfileView(userProfile: userProfiles.first)
@@ -372,7 +391,7 @@ struct UsageGuideView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("使用说明")
-                    .font(.largeTitle)
+                    .font(.headline)
                     .fontWeight(.bold)
                 
                 Text("欢迎使用 HomeNest！")
@@ -409,6 +428,7 @@ struct UsageGuideView: View {
             .padding()
         }
         .navigationTitle("使用说明")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -418,7 +438,7 @@ struct PrivacyPolicyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("隐私政策")
-                    .font(.largeTitle)
+                    .font(.headline)
                     .fontWeight(.bold)
                 
                 Text("生效日期：2026年4月2日")
@@ -459,6 +479,7 @@ struct PrivacyPolicyView: View {
             .padding()
         }
         .navigationTitle("隐私政策")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -468,7 +489,7 @@ struct TermsOfServiceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("用户协议")
-                    .font(.largeTitle)
+                    .font(.headline)
                     .fontWeight(.bold)
                 
                 Text("生效日期：2026年4月2日")
@@ -502,6 +523,7 @@ struct TermsOfServiceView: View {
             .padding()
         }
         .navigationTitle("用户协议")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
