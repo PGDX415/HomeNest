@@ -112,7 +112,7 @@ struct StatisticsDashboardView: View {
             VStack(spacing: 20) {
                 // 标题
                 Text("统计概览")
-                    .font(.largeTitle)
+                    .font(.title3)
                     .fontWeight(.bold)
                     .padding(.top)
                 
@@ -175,8 +175,7 @@ struct StatisticsDashboardView: View {
                         Label("添加位置", systemImage: "folder.badge.plus")
                     }
                 } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.title)
+                    Image(systemName: "plus")
                 }
             }
         }

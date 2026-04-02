@@ -40,7 +40,7 @@ struct PlacesView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(place.name)
-                                    .font(.headline)
+                                    .font(.title2)
                                     .fontWeight(.semibold)
                                 
                                 if place.isPrimary {
@@ -103,6 +103,17 @@ struct PlacesView: View {
                         }
                         
                         Spacer()
+                        
+                        // Edit button
+                        Button(action: {
+                            placeToEdit = place
+                            showingEditPlaceSheet = true
+                        }) {
+                            Image(systemName: "pencil")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
                     }
                     .padding(.vertical, 8)
                 }
@@ -128,6 +139,14 @@ struct PlacesView: View {
                 modelContext.insert(newPlace)
             }
         }
+        .sheet(isPresented: $showingEditPlaceSheet) {
+            if let placeToEdit = placeToEdit {
+                AddPlaceSheet(existingPlace: placeToEdit) { updatedPlace in
+                    // The sheet updates the existing place directly, no need to manually update properties
+                    // Just dismiss the sheet
+                }
+            }
+        }
         .alert("⚠️ 警告：永久删除场所", isPresented: $showingDeleteConfirmation) {
             Button("永久删除", role: .destructive) {
                 if let place = placeToDelete {
@@ -149,7 +168,9 @@ struct PlacesView: View {
     }
     
     @State private var showingDeleteConfirmation = false
+    @State private var showingEditPlaceSheet = false
     @State private var placeToDelete: Home?
+    @State private var placeToEdit: Home?
     
     // Helper function to generate delete confirmation message
     private func deleteConfirmationMessage() -> Text {
