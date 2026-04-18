@@ -49,7 +49,7 @@ struct SupportDeveloperView: View {
                 .buttonStyle(PlainButtonStyle())
                 #else
                 // 网页捐赠链接（个人开发者友好方案）
-                Link(destination: URL(string: "https://afdian.net/@your-username")!) {
+                Link(destination: URL(string: "https://ifdian.net/a/homenest")!) {
                     HStack {
                         Image(systemName: "qrcode")
                         Text("爱发电支持")
