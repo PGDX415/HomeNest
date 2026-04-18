@@ -385,10 +385,7 @@ struct ItemsView: View {
             
             Spacer()
             
-            if !isBatchMode {
-                Text("\(item.quantity)")
-                    .font(.headline)
-            }
+            // Removed duplicate quantity display - it's already shown in the main HStack
         }
     }
     
