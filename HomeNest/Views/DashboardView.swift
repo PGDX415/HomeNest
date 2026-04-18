@@ -124,10 +124,10 @@ struct StatisticsDashboardView: View {
                     NavigationLink(destination: ItemsView()) {
                         DashboardCard(title: "物品总数", count: allItems.count, icon: "list.bullet.rectangle", color: .blue)
                     }
-                    NavigationLink(destination: ItemsView()) {
+                    NavigationLink(destination: ValuableItemsView()) {
                         DashboardCard(title: "总价值", countText: "¥\(String(format: "%.0f", totalValue))", icon: "dollarsign.circle", color: .orange)
                     }
-                    NavigationLink(destination: ItemsView()) {
+                    NavigationLink(destination: ExpiringItemsView()) {
                         DashboardCard(title: "即将过期", count: expiringSoonItems.count, icon: "clock.arrow.circlepath", color: .red)
                     }
                 }

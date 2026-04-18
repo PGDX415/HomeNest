@@ -143,6 +143,9 @@ struct ProfileView: View {
             
             // 关于区域
             Section("关于") {
+                NavigationLink(destination: SupportDeveloperView()) {
+                    Label("支持开发者", systemImage: "heart.fill")
+                }
                 HStack {
                     Text("版本")
                     Spacer()
