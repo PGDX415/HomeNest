@@ -118,7 +118,9 @@ struct StatisticsDashboardView: View {
                 
                 // 数据卡片
                 VStack(spacing: 15) {
-                    DashboardCard(title: "位置总数", count: allLocations.count, icon: "folder.fill", color: .green)
+                    NavigationLink(destination: GroupedLocationsView()) {
+                        DashboardCard(title: "位置总数", count: allLocations.count, icon: "folder.fill", color: .green)
+                    }
                     DashboardCard(title: "物品总数", count: allItems.count, icon: "list.bullet.rectangle", color: .blue)
                     DashboardCard(title: "总价值", countText: "¥\(String(format: "%.0f", totalValue))", icon: "dollarsign.circle", color: .orange)
                     DashboardCard(title: "即将过期", count: expiringSoonItems.count, icon: "clock.arrow.circlepath", color: .red)
