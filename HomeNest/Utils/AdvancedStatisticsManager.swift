@@ -248,7 +248,7 @@ class AdvancedStatisticsManager {
                 let homeItems = items.filter { $0.location?.home?.persistentModelID == home.persistentModelID }
                 
                 let totalLocations = homeLocations.count
-                let usedLocations = homeLocations.filter { !$0.items.isEmpty || !$0.subLocations.isEmpty }.count
+                let usedLocations = homeLocations.filter { !($0.items ?? []).isEmpty || !($0.subLocations ?? []).isEmpty }.count
                 let capacityPercentage = totalLocations > 0 ? Double(usedLocations) / Double(totalLocations) * 100 : 0
                 
                 analysisResults.append(

@@ -12,9 +12,15 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appLockManager: AppLockManager
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var cloudKitSyncMonitor: CloudKitSyncMonitor
     @Query private var allHomes: [Home]
-    @Query private var userProfiles: [UserProfile]
-    
+    @Query(sort: \UserProfile.updatedAt, order: .reverse) private var userProfiles: [UserProfile]
+
+    /// 获取当前用户配置（最新的一条）
+    private var currentProfile: UserProfile? {
+        userProfiles.first
+    }
+
     // 应用版本信息
     @State private var appVersion: String = ""
     @State private var showingEditSheet = false
@@ -34,7 +40,7 @@ struct ProfileView: View {
                     showingEditSheet = true
                 }) {
                     HStack {
-                        if let userProfile = userProfiles.first {
+                        if let userProfile = currentProfile {
                             if let avatarData = userProfile.avatarData,
                                let uiImage = UIImage(data: avatarData) {
                                 Image(uiImage: uiImage)
@@ -55,7 +61,7 @@ struct ProfileView: View {
                                 .clipShape(Circle())
                         }
                         VStack(alignment: .leading) {
-                            Text(userProfiles.first?.displayName ?? "HomeNest 用户")
+                            Text(currentProfile?.displayName ?? "HomeNest 用户")
                                 .font(.headline)
                             Text("家庭物品管理专家")
                                 .font(.subheadline)
@@ -83,6 +89,50 @@ struct ProfileView: View {
                 }
             }
             
+            // iCloud 同步状态区域
+            Section("iCloud 云同步") {
+                // 同步状态行
+                HStack {
+                    Image(systemName: cloudKitSyncMonitor.statusIcon)
+                        .foregroundColor(syncStatusColor)
+                        .font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(cloudKitSyncMonitor.statusDescription)
+                            .font(.subheadline)
+                        if let lastSync = cloudKitSyncMonitor.lastSyncDescription {
+                            Text(lastSync)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    Spacer()
+                    if cloudKitSyncMonitor.syncStatus == .syncing {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+                }
+
+                // 手动同步按钮
+                Button(action: {
+                    cloudKitSyncMonitor.requestSync()
+                }) {
+                    Label("立即同步", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .disabled(cloudKitSyncMonitor.syncStatus == .syncing)
+
+                // iCloud 状态详情
+                if !cloudKitSyncMonitor.isiCloudAvailable {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.orange)
+                            .font(.caption)
+                        Text("请在「系统设置」中登录 iCloud 账户以启用云同步")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+
             // 应用功能区域
             Section("应用功能") {
                 NavigationLink(destination: UsageGuideView()) {
@@ -167,16 +217,48 @@ struct ProfileView: View {
             // 初始化主题设置
             selectedTheme = themeManager.currentTheme
         }
+        .onChange(of: userProfiles.count) { _ in
+            ensureUserProfileExists()
+        }
         .sheet(isPresented: $showingEditSheet) {
-            EditUserProfileView(userProfile: userProfiles.first)
+            EditUserProfileView(userProfile: currentProfile)
         }
     }
-    
-    // 确保用户配置存在
+
+    /// iCloud 同步状态对应的颜色
+    private var syncStatusColor: Color {
+        switch cloudKitSyncMonitor.syncStatus {
+        case .notAvailable, .unknown:
+            return .gray
+        case .initializing, .syncing:
+            return .blue
+        case .synced:
+            return .green
+        case .error:
+            return .red
+        }
+    }
+
+    // 确保用户配置存在，并清理 CloudKit 同步导致的重复项
     private func ensureUserProfileExists() {
         if userProfiles.isEmpty {
             let newProfile = UserProfile()
             modelContext.insert(newProfile)
+            try? modelContext.save()
+        } else if userProfiles.count > 1 {
+            // 先快照，防止迭代中 @Query 变化
+            let allProfiles = userProfiles
+
+            // 优先保留有自定义数据（非默认名或有头像）的 profile
+            let keptProfile = allProfiles.first { $0.displayName != "HomeNest 用户" || $0.avatarData != nil }
+                ?? allProfiles.sorted(by: { $0.updatedAt > $1.updatedAt }).first!
+
+            for profile in allProfiles {
+                if profile.persistentModelID != keptProfile.persistentModelID {
+                    modelContext.delete(profile)
+                }
+            }
+            try? modelContext.save()
         }
     }
     
@@ -221,7 +303,7 @@ struct ProfileView: View {
                 // 统计这些位置中的物品数量
                 var itemCount = 0
                 for location in validLocations {
-                    itemCount += location.items.count
+                    itemCount += location.items?.count ?? 0
                 }
                 return itemCount
             } catch {
@@ -431,7 +513,7 @@ struct UsageGuideView: View {
                     .font(.headline)
                     .foregroundColor(.orange)
                 
-                Text("• 首次使用请先添加场所\n• 物品分类支持自定义\n• 所有数据本地安全存储\n• 支持iCloud云端同步（需开发者账户）")
+                Text("• 首次使用请先添加场所\n• 物品分类支持自定义\n• 数据自动通过 iCloud 云端同步\n• iPhone、iPad 数据实时同步，随时随地管理")
                     .font(.body)
             }
             .padding()
@@ -602,5 +684,6 @@ struct AboutAppView: View {
     NavigationStack {
         ProfileView()
     }
+    .environmentObject(CloudKitSyncMonitor.shared)
     .modelContainer(for: [Item.self, StorageLocation.self, Home.self, UserProfile.self], inMemory: true)
 }

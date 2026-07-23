@@ -178,7 +178,7 @@ struct PlacesView: View {
             return Text("确定要删除此场所吗？\n\n⚠️ 此操作将永久删除所有相关数据，无法恢复！")
         }
         
-        let locationCount = place.locations.count
+        let locationCount = place.locations?.count ?? 0
         let totalItemCount = place.totalItemCount()
         var message = "⚠️ **严重警告**\n\n"
         message += "您即将永久删除场所\"\(place.name)\"及其所有数据！\n\n"
@@ -225,7 +225,7 @@ struct PlacesView: View {
         for location in allLocations {
             // Check if this location belongs to the place (directly or through parent chain)
             if isLocationInPlace(location, place: place) {
-                totalCount += location.items.count
+                totalCount += location.items?.count ?? 0
                 
                 // Add items from sub-locations
                 totalCount += getItemsInSubLocations(of: location)
@@ -241,7 +241,7 @@ struct PlacesView: View {
         
         for subLocation in allLocations {
             if subLocation.parent?.persistentModelID == location.persistentModelID {
-                count += subLocation.items.count
+                count += subLocation.items?.count ?? 0
                 count += getItemsInSubLocations(of: subLocation)
             }
         }

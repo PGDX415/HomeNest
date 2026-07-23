@@ -118,7 +118,12 @@ struct DataBackupView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
+                Text("☁️ 本应用已支持 iCloud 云同步，您可以在同一 Apple ID 的不同设备间自动同步数据。若需手动备份或迁移数据到非 Apple 设备，可使用此导出功能。")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 Text("⚠️ 恢复数据会覆盖现有数据，请谨慎操作。建议先备份当前数据再进行恢复。")
                     .font(.caption)
                     .foregroundColor(.orange)

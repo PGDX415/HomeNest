@@ -175,7 +175,7 @@ struct ItemsView: View {
                 ForEach(itemsByHome.indices, id: \.self) { index in
                     let homeGroup = itemsByHome[index]
                     Section(homeGroup.homeName ?? "未分类") {
-                        ForEach(homeGroup.items, id: \.persistentModelID) { item in
+                        ForEach(homeGroup.items ?? [], id: \.persistentModelID) { item in
                             HStack {
                                 if isBatchMode {
                                     // Batch mode: show selection checkbox

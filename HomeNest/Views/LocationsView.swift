@@ -96,8 +96,8 @@ struct LocationsView: View {
     
     // Helper function to generate delete confirmation message
     private func deleteConfirmationMessage(for location: StorageLocation) -> String {
-        let itemCount = location.items.count
-        let subLocationCount = location.subLocations.count
+        let itemCount = location.items?.count ?? 0
+        let subLocationCount = location.subLocations?.count ?? 0
         var message = "确定要删除位置\"\(location.name)\"吗？"
         
         if itemCount > 0 || subLocationCount > 0 {

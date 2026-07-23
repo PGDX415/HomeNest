@@ -139,7 +139,7 @@ struct GroupedLocationsView: View {
                 ForEach(locationsByHome.indices, id: \.self) { index in
                     let homeGroup = locationsByHome[index]
                     Section(homeGroup.homeName ?? "未分类") {
-                        ForEach(homeGroup.locations, id: \.persistentModelID) { location in
+                        ForEach(homeGroup.locations ?? [], id: \.persistentModelID) { location in
                             NavigationLink(destination: LocationDetailView(location: location)) {
                                 HStack {
                                     // Safe icon handling - ensure non-empty valid SF Symbol with custom color

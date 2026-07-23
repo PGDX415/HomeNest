@@ -17,35 +17,34 @@ struct HomeNestApp: App {
             Home.self,
             UserProfile.self,
         ])
-        
-        // Configure for CloudKit sync with proper settings
+
+        let cloudKitContainerID = "iCloud.com.gongdexin.paul.HomeNest"
+        print("☁️ App: 初始化 ModelContainer，CloudKit 容器: \(cloudKitContainerID)")
+
+        // Explicitly use private CloudKit database for sync across devices
         let modelConfiguration = ModelConfiguration(
-            schema: schema, 
+            schema: schema,
             isStoredInMemoryOnly: false,
             cloudKitDatabase: .automatic
         )
 
         do {
-            // Try to create the model container
             let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            
-            // Clean up empty icon strings in the database
+            print("☁️ App: CloudKit ModelContainer 创建成功 ✅")
+            if FileManager.default.ubiquityIdentityToken != nil {
+                print("☁️ App: iCloud 已登录")
+            } else {
+                print("☁️ App: ⚠️ iCloud 未登录！")
+            }
             cleanUpEmptyIcons(in: container.mainContext)
-            
             return container
         } catch {
-            // Log the error but don't crash - this handles recovery scenarios gracefully
-            print("Warning: ModelContainer creation encountered an issue: \(error)")
-            print("This may be due to database recovery or CloudKit sync state.")
-            
-            // Attempt to create a fallback container without CloudKit if needed
+            print("☁️ App: CloudKit container 失败，使用本地存储 ⚠️: \(error)")
             let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             do {
                 let container = try ModelContainer(for: schema, configurations: [fallbackConfiguration])
-                
-                // Clean up empty icon strings in the database
+                print("☁️ App: 本地存储模式")
                 cleanUpEmptyIcons(in: container.mainContext)
-                
                 return container
             } catch {
                 fatalError("Could not create ModelContainer even with fallback: \(error)")
@@ -55,6 +54,7 @@ struct HomeNestApp: App {
     
     @StateObject private var appLockManager = AppLockManager.shared
     @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var cloudKitSyncMonitor = CloudKitSyncMonitor.shared
 
     var body: some Scene {
         WindowGroup {
@@ -67,6 +67,7 @@ struct HomeNestApp: App {
             }
             .environmentObject(appLockManager)
             .environmentObject(themeManager)
+            .environmentObject(cloudKitSyncMonitor)
             .environment(\.colorScheme, themeManager.getCurrentColorScheme() ?? .light)
         }
         .modelContainer(sharedModelContainer)
