@@ -26,6 +26,7 @@ struct AddItemSheet: View {
     @State private var selectedLocation: StorageLocation?
     @State private var selectedFamilyMember: FamilyMember?
     @State private var selectedStatus: ItemStatus = .active
+    @State private var needsRestock = false
 
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var photoData: Data?
@@ -62,6 +63,7 @@ struct AddItemSheet: View {
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
             _selectedLocation = State(initialValue: existingItem.location)
+            _needsRestock = State(initialValue: existingItem.needsRestock)
             _selectedStatus = State(initialValue: existingItem.status)
         }
     }
@@ -95,6 +97,9 @@ struct AddItemSheet: View {
                     Stepper("数量: \(quantity)", value: $quantity, in: 1...999)
                     
                     TextField("描述", text: $descriptionText)
+
+                    Toggle("加入购物清单", isOn: $needsRestock)
+                        .tint(.orange)
                 }
                 
                 Section("状态") {
@@ -263,6 +268,7 @@ struct AddItemSheet: View {
                             existingItem.lentDate = lentDate
                             existingItem.expectedReturnDate = expectedReturnDate
                             existingItem.status = selectedStatus
+                            existingItem.needsRestock = needsRestock
                             existingItem.category = category.isEmpty ? nil : category
                             existingItem.tags = tags
                             existingItem.photoData = photoData
@@ -293,6 +299,7 @@ struct AddItemSheet: View {
                             newItem.lentTo = lentTo.isEmpty ? nil : lentTo
                             newItem.lentDate = lentDate
                             newItem.expectedReturnDate = expectedReturnDate
+                            newItem.needsRestock = needsRestock
                             newItem.familyMember = selectedFamilyMember
                             newItem.status = selectedStatus
 

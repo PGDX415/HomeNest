@@ -55,6 +55,27 @@ struct ItemDetailView: View {
                     }
                 }
                 
+                // Restock toggle
+                HStack {
+                    Button(action: {
+                        item.needsRestock.toggle()
+                        item.updatedAt = Date()
+                    }) {
+                        HStack {
+                            Image(systemName: item.needsRestock ? "cart.fill" : "cart")
+                                .foregroundColor(item.needsRestock ? .orange : .secondary)
+                            Text(item.needsRestock ? "已在购物清单" : "加入购物清单")
+                                .font(.subheadline)
+                                .foregroundColor(item.needsRestock ? .orange : .secondary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(item.needsRestock ? Color.orange.opacity(0.1) : Color.secondary.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    Spacer()
+                }
+
                 // Description section - updated to use 'details'
                 if let details = item.details, !details.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {

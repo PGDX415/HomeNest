@@ -115,6 +115,9 @@ struct StatisticsDashboardView: View {
         return allItems.filter { $0.status == .lent && ($0.expectedReturnDate.map { $0 < today } ?? false) }.count
     }
 
+    // Shopping list
+    var restockCount: Int { allItems.filter { $0.needsRestock }.count }
+
     // Warranty counts
     var expiringWarrantyCount: Int {
         let today = Date()
@@ -165,6 +168,12 @@ struct StatisticsDashboardView: View {
                     }
                     NavigationLink(destination: ExpiringItemsView()) {
                         DashboardCard(title: "即将过期", count: expiringSoonItems.count, icon: "clock.arrow.circlepath", color: .red)
+                    }
+
+                    if restockCount > 0 {
+                        NavigationLink(destination: ShoppingListView()) {
+                            DashboardCard(title: "购物清单", count: restockCount, icon: "cart.fill", color: .orange)
+                        }
                     }
 
                     if idleCount > 0 {

@@ -14,6 +14,8 @@ struct ContentView: View {
     @Query private var allItems: [Item]
 
     @State private var selectedTab = 0  // 首页默认显示「场所」
+
+    private var restockBadge: Int { allItems.filter { $0.needsRestock }.count }
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -42,6 +44,7 @@ struct ContentView: View {
             .tabItem {
                 Label("物品", systemImage: "list.bullet.rectangle")
             }
+            .badge(restockBadge)
             .tag(2)
             
             // Profile Tab

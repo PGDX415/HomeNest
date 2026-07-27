@@ -207,6 +207,7 @@ final class StorageLocation {
 final class Item {
     var name: String = ""
     var quantity: Int = 1
+    var needsRestock: Bool = false
     var status: ItemStatus = ItemStatus.active
     var details: String?
     var value: Double?
