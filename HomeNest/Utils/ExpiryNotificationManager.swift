@@ -102,7 +102,7 @@ final class ExpiryNotificationManager {
                 }
             }
         }
-        print("🔔 已为 \(items.count) 个物品安排到期提醒")
+        print("🔔 已扫描 \(items.count) 个物品的到期日期")
     }
 
     /// 扫描所有物品，为保修即将到期的物品设置通知
@@ -167,7 +167,7 @@ final class ExpiryNotificationManager {
                 }
             }
         }
-        print("🛡️ 已为 \(items.count) 个物品安排保修提醒")
+        print("🛡️ 已扫描 \(items.count) 个物品的保修日期")
     }
 
     /// 扫描借出物品，为预计归还日设置提醒
@@ -207,7 +207,7 @@ final class ExpiryNotificationManager {
                 center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
             }
         }
-        print("📤 已为借出物品安排归还提醒")
+        print("📤 已扫描借出物品的归还日期")
     }
 
     /// 调度所有通知（保质期 + 保修 + 借出）
