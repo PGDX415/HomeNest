@@ -254,6 +254,7 @@ final class UserProfile {
 @Model
 final class FamilyMember {
     var name: String = ""
+    var identifier: String?  // Apple ID / 邮箱 / 手机号，用于跨设备关联真实用户
     var emoji: String = "👤"
     var colorName: String = "blue"
     var createdAt: Date = Date()
@@ -263,8 +264,9 @@ final class FamilyMember {
     @Relationship(deleteRule: .nullify, inverse: \Item.familyMember)
     var items: [Item]?
 
-    init(name: String, emoji: String = "👤", colorName: String = "blue") {
+    init(name: String, identifier: String? = nil, emoji: String = "👤", colorName: String = "blue") {
         self.name = name
+        self.identifier = identifier
         self.emoji = emoji
         self.colorName = colorName
         self.items = []

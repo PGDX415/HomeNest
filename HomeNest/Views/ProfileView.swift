@@ -97,8 +97,15 @@ struct ProfileView: View {
                     HStack {
                         Text(member.emoji)
                             .font(.title2)
-                        Text(member.name)
-                            .font(.subheadline)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(member.name)
+                                .font(.subheadline)
+                            if let identifier = member.identifier {
+                                Text(identifier)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
                         Spacer()
                         Text("\(member.items?.count ?? 0) 件")
                             .font(.caption)
@@ -720,6 +727,7 @@ struct AddFamilyMemberSheet: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var name = ""
+    @State private var identifier = ""
     @State private var emoji = "👤"
     @State private var colorName = "blue"
 
@@ -731,6 +739,10 @@ struct AddFamilyMemberSheet: View {
             Form {
                 Section("基本信息") {
                     TextField("姓名", text: $name)
+
+                    TextField("标识符（Apple ID / 邮箱）", text: $identifier)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
 
                     Picker("表情", selection: $emoji) {
                         ForEach(emojis, id: \.self) { e in
@@ -765,6 +777,7 @@ struct AddFamilyMemberSheet: View {
                     Button("添加") {
                         let member = FamilyMember(
                             name: name.isEmpty ? "新成员" : name,
+                            identifier: identifier.isEmpty ? nil : identifier,
                             emoji: emoji,
                             colorName: colorName
                         )
