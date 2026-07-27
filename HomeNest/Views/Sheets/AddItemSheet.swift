@@ -18,6 +18,9 @@ struct AddItemSheet: View {
     @State private var expiryDate: Date?
     @State private var warrantyEndDate: Date?
     @State private var warrantyNotes = ""
+    @State private var lentTo = ""
+    @State private var lentDate: Date?
+    @State private var expectedReturnDate: Date?
     @State private var category = ""
     @State private var tagsText = ""
     @State private var selectedLocation: StorageLocation?
@@ -52,6 +55,9 @@ struct AddItemSheet: View {
             _expiryDate = State(initialValue: existingItem.expiryDate)
             _warrantyEndDate = State(initialValue: existingItem.warrantyEndDate)
             _warrantyNotes = State(initialValue: existingItem.warrantyNotes ?? "")
+            _lentTo = State(initialValue: existingItem.lentTo ?? "")
+            _lentDate = State(initialValue: existingItem.lentDate)
+            _expectedReturnDate = State(initialValue: existingItem.expectedReturnDate)
             _category = State(initialValue: existingItem.category ?? "")
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
@@ -97,6 +103,24 @@ struct AddItemSheet: View {
                             Label(status.rawValue, systemImage: status.icon)
                                 .tag(status)
                         }
+                    }
+                }
+
+                if selectedStatus == .lent {
+                    Section("借出详情") {
+                        TextField("借出给谁", text: $lentTo)
+
+                        DatePicker("借出日期", selection: Binding(
+                            get: { lentDate ?? Date() },
+                            set: { lentDate = $0 }
+                        ), displayedComponents: [.date])
+                        .datePickerStyle(.compact)
+
+                        DatePicker("预计归还", selection: Binding(
+                            get: { expectedReturnDate ?? Date().addingTimeInterval(7 * 24 * 3600) },
+                            set: { expectedReturnDate = $0 }
+                        ), displayedComponents: [.date])
+                        .datePickerStyle(.compact)
                     }
                 }
 
@@ -235,6 +259,9 @@ struct AddItemSheet: View {
                             existingItem.expiryDate = expiryDate
                             existingItem.warrantyEndDate = warrantyEndDate
                             existingItem.warrantyNotes = warrantyNotes.isEmpty ? nil : warrantyNotes
+                            existingItem.lentTo = lentTo.isEmpty ? nil : lentTo
+                            existingItem.lentDate = lentDate
+                            existingItem.expectedReturnDate = expectedReturnDate
                             existingItem.status = selectedStatus
                             existingItem.category = category.isEmpty ? nil : category
                             existingItem.tags = tags
@@ -263,6 +290,9 @@ struct AddItemSheet: View {
                             )
                             newItem.warrantyEndDate = warrantyEndDate
                             newItem.warrantyNotes = warrantyNotes.isEmpty ? nil : warrantyNotes
+                            newItem.lentTo = lentTo.isEmpty ? nil : lentTo
+                            newItem.lentDate = lentDate
+                            newItem.expectedReturnDate = expectedReturnDate
                             newItem.familyMember = selectedFamilyMember
                             newItem.status = selectedStatus
 

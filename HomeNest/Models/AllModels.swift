@@ -214,6 +214,9 @@ final class Item {
     var expiryDate: Date?
     var warrantyEndDate: Date?
     var warrantyNotes: String?
+    var lentTo: String?
+    var lentDate: Date?
+    var expectedReturnDate: Date?
     var category: String?
     var tags: [String] = []
     var photoData: Data?

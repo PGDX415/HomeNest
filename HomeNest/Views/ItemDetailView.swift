@@ -171,6 +171,55 @@ struct ItemDetailView: View {
                     }
                 }
 
+                // Lending section
+                if item.status == .lent {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("借出详情")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+
+                        if let lentTo = item.lentTo {
+                            HStack {
+                                Image(systemName: "person.fill")
+                                Text("借出给: \(lentTo)")
+                            }
+                            .font(.subheadline)
+                        }
+
+                        if let lentDate = item.lentDate {
+                            HStack {
+                                Image(systemName: "calendar")
+                                Text("借出日期: \(lentDate, style: .date)")
+                            }
+                            .font(.subheadline)
+                        }
+
+                        if let returnDate = item.expectedReturnDate {
+                            let today = Date()
+                            let isOverdue = returnDate < today
+                            let daysRemaining = Calendar.current.dateComponents([.day], from: today, to: returnDate).day ?? 0
+
+                            HStack {
+                                Image(systemName: isOverdue ? "exclamationmark.triangle.fill" : "calendar.badge.clock")
+                                    .foregroundColor(isOverdue ? .red : .orange)
+                                Text("预计归还: \(returnDate, style: .date)")
+                                    .foregroundColor(isOverdue ? .red : .primary)
+                                if isOverdue {
+                                    Text("(已逾期 \(abs(daysRemaining)) 天)")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                } else {
+                                    Text("(剩余 \(daysRemaining) 天)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .font(.subheadline)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 // Tags section
                 if !item.tags.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {

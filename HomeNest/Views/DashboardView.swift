@@ -110,6 +110,10 @@ struct StatisticsDashboardView: View {
     // Status counts
     var idleCount: Int { allItems.filter { $0.status == .idle }.count }
     var lentCount: Int { allItems.filter { $0.status == .lent }.count }
+    var overdueLentCount: Int {
+        let today = Date()
+        return allItems.filter { $0.status == .lent && ($0.expectedReturnDate.map { $0 < today } ?? false) }.count
+    }
 
     // Warranty counts
     var expiringWarrantyCount: Int {
@@ -172,6 +176,12 @@ struct StatisticsDashboardView: View {
                     if lentCount > 0 {
                         NavigationLink(destination: ItemsView()) {
                             DashboardCard(title: "借出物品", count: lentCount, icon: "arrowshape.turn.up.right", color: .blue)
+                        }
+                    }
+
+                    if overdueLentCount > 0 {
+                        NavigationLink(destination: ItemsView()) {
+                            DashboardCard(title: "逾期未归还", count: overdueLentCount, icon: "exclamationmark.arrow.triangle.2.circlepath", color: .red)
                         }
                     }
 

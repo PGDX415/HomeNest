@@ -170,10 +170,51 @@ final class ExpiryNotificationManager {
         print("🛡️ 已为 \(items.count) 个物品安排保修提醒")
     }
 
-    /// 调度所有通知（保质期 + 保修）
+    /// 扫描借出物品，为预计归还日设置提醒
+    func scheduleLendingNotifications(for items: [Item]) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withPrefix: "lend-")
+
+        let now = Date()
+        let calendar = Calendar.current
+
+        for item in items {
+            guard item.status == .lent,
+                  let returnDate = item.expectedReturnDate,
+                  returnDate >= calendar.startOfDay(for: now) else { continue }
+
+            let daysRemaining = calendar.dateComponents([.day], from: now, to: returnDate).day ?? 0
+            let reminderDays = [3, 1, 0].filter { $0 <= daysRemaining }
+
+            for daysBefore in reminderDays {
+                guard let triggerDate = calendar.date(byAdding: .day, value: -daysBefore, to: returnDate),
+                      triggerDate > now else { continue }
+
+                let content = UNMutableNotificationContent()
+                content.title = "📤 借出物品归还提醒"
+                if daysBefore == 0 {
+                    content.body = "「\(item.name)」今天应该归还了！"
+                } else {
+                    let person = item.lentTo.map { "借给\($0)的" } ?? ""
+                    content.body = "\(person)「\(item.name)」将在 \(daysBefore) 天后到期归还"
+                }
+                content.sound = .default
+
+                let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+
+                let identifier = "lend-\(item.persistentModelID.hashValue)-\(daysBefore)"
+                center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+            }
+        }
+        print("📤 已为借出物品安排归还提醒")
+    }
+
+    /// 调度所有通知（保质期 + 保修 + 借出）
     func scheduleAllNotifications(for items: [Item]) {
         scheduleExpiryNotifications(for: items)
         scheduleWarrantyNotifications(for: items)
+        scheduleLendingNotifications(for: items)
     }
 
     /// 清除单个物品的所有通知
