@@ -153,6 +153,12 @@ struct StatisticsDashboardView: View {
                     NavigationLink(destination: ValuableItemsView()) {
                         DashboardCard(title: "总价值", countText: "¥\(String(format: "%.0f", totalValue))", icon: "dollarsign.circle", color: .orange)
                     }
+
+                    if totalValue > 0 {
+                        NavigationLink(destination: InsuranceReportView()) {
+                            DashboardCard(title: "保险清单", countText: "生成报表", icon: "doc.richtext", color: .purple)
+                        }
+                    }
                     NavigationLink(destination: ExpiringItemsView()) {
                         DashboardCard(title: "即将过期", count: expiringSoonItems.count, icon: "clock.arrow.circlepath", color: .red)
                     }
