@@ -64,9 +64,13 @@ struct ContentView: View {
             ExpiryNotificationManager.shared.scheduleAllNotifications(for: allItems)
         }
         .task {
+            print("🟢 [Launch] ContentView.task 开始")
             // 首次启动时请求权限并安排通知
             await ExpiryNotificationManager.shared.requestAuthorization()
+            print("🟢 [Launch] 通知权限请求完成: authorized=\(ExpiryNotificationManager.shared.isAuthorized)")
+            print("🟢 [Launch] allItems.count=\(allItems.count)")
             ExpiryNotificationManager.shared.scheduleAllNotifications(for: allItems)
+            print("🟢 [Launch] ContentView.task 完成")
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             // 从后台回来时刷新（CloudKit 可能同步了新数据）

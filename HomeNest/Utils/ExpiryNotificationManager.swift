@@ -212,9 +212,13 @@ final class ExpiryNotificationManager {
 
     /// 调度所有通知（保质期 + 保修 + 借出）
     func scheduleAllNotifications(for items: [Item]) {
+        print("🔔 scheduleAllNotifications: 开始, items=\(items.count)")
         scheduleExpiryNotifications(for: items)
-        scheduleWarrantyNotifications(for: items)
-        scheduleLendingNotifications(for: items)
+        print("🔔 scheduleAllNotifications: 保质期完成")
+        // 暂时注释掉新通知，定位 crash
+        // scheduleWarrantyNotifications(for: items)
+        // scheduleLendingNotifications(for: items)
+        print("🔔 scheduleAllNotifications: 完成")
     }
 
     /// 清除单个物品的所有通知
