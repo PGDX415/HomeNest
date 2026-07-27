@@ -176,6 +176,10 @@ struct StatisticsDashboardView: View {
                         }
                     }
 
+                    NavigationLink(destination: ActivityLogView()) {
+                        DashboardCard(title: "操作日志", countText: "查看", icon: "clock.arrow.circlepath", color: .indigo)
+                    }
+
                     if idleCount > 0 {
                         NavigationLink(destination: ItemsView()) {
                             DashboardCard(title: "闲置物品", count: idleCount, icon: "circle.slash", color: .orange)

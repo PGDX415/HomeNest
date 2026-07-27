@@ -79,6 +79,7 @@ struct ItemDetailView: View {
                     Button(action: {
                         item.needsRestock.toggle()
                         item.updatedAt = Date()
+                        ActivityLogger.log(context: modelContext, itemName: item.name, action: item.needsRestock ? "加入购物清单" : "移除购物清单")
                     }) {
                         HStack {
                             Image(systemName: item.needsRestock ? "cart.fill" : "cart")

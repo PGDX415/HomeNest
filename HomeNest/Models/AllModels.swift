@@ -287,6 +287,23 @@ final class UserProfile {
     }
 }
 
+// MARK: - ActivityLog
+
+@Model
+final class ActivityLog {
+    var itemName: String = ""
+    var action: String = ""
+    var detail: String?
+    var timestamp: Date = Date()
+
+    init(itemName: String, action: String, detail: String? = nil) {
+        self.itemName = itemName
+        self.action = action
+        self.detail = detail
+        self.timestamp = Date()
+    }
+}
+
 // MARK: - FamilyMember
 
 @Model

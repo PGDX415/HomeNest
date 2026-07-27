@@ -304,6 +304,7 @@ struct AddItemSheet: View {
                             existingItem.updatedAt = Date()
                             
                             // Call onSave with the existing (now updated) item
+                            ActivityLogger.logItemUpdated(existingItem, context: modelContext)
                             onSave(existingItem)
                         } else {
                             // Create new item for add mode
@@ -329,6 +330,7 @@ struct AddItemSheet: View {
                             newItem.familyMember = selectedFamilyMember
                             newItem.status = selectedStatus
 
+                            ActivityLogger.logItemCreated(newItem, context: modelContext)
                             onSave(newItem)
                         }
                         dismiss()
