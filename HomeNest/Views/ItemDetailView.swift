@@ -135,6 +135,42 @@ struct ItemDetailView: View {
                     }
                 }
                 
+                // Warranty section
+                if let warrantyEnd = item.warrantyEndDate {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("保修")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+
+                        let today = Date()
+                        let isExpired = warrantyEnd < today
+                        let daysRemaining = Calendar.current.dateComponents([.day], from: today, to: warrantyEnd).day ?? 0
+
+                        HStack {
+                            Image(systemName: "checkmark.shield.fill")
+                                .foregroundColor(isExpired ? .red : .green)
+                            Text("截止: \(warrantyEnd, style: .date)")
+                                .foregroundColor(isExpired ? .red : (daysRemaining <= 30 ? .orange : .primary))
+                            if !isExpired {
+                                Text("(剩余 \(daysRemaining) 天)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("(已过期)")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                        }
+
+                        if let notes = item.warrantyNotes, !notes.isEmpty {
+                            Text(notes)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 2)
+                        }
+                    }
+                }
+
                 // Tags section
                 if !item.tags.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {

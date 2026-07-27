@@ -110,6 +110,28 @@ struct StatisticsDashboardView: View {
     // Status counts
     var idleCount: Int { allItems.filter { $0.status == .idle }.count }
     var lentCount: Int { allItems.filter { $0.status == .lent }.count }
+
+    // Warranty counts
+    var expiringWarrantyCount: Int {
+        let today = Date()
+        let nextMonth = Calendar.current.date(byAdding: .month, value: 1, to: today)!
+        return allItems.filter { item in
+            if let warrantyEnd = item.warrantyEndDate {
+                return warrantyEnd >= today && warrantyEnd <= nextMonth
+            }
+            return false
+        }.count
+    }
+
+    var expiredWarrantyCount: Int {
+        let today = Date()
+        return allItems.filter { item in
+            if let warrantyEnd = item.warrantyEndDate {
+                return warrantyEnd < today
+            }
+            return false
+        }.count
+    }
     
     var body: some View {
         ScrollView {
@@ -145,6 +167,14 @@ struct StatisticsDashboardView: View {
                         NavigationLink(destination: ItemsView()) {
                             DashboardCard(title: "借出物品", count: lentCount, icon: "arrowshape.turn.up.right", color: .blue)
                         }
+                    }
+
+                    if expiringWarrantyCount > 0 {
+                        NavigationLink(destination: ItemsView()) {
+                            DashboardCard(title: "保修即将到期", count: expiringWarrantyCount, icon: "checkmark.shield.fill", color: .orange)
+                        }
+                    } else if expiredWarrantyCount > 0 {
+                        DashboardCard(title: "保修已过期", count: expiredWarrantyCount, icon: "xmark.shield.fill", color: .red)
                     }
                 }
                 .padding(.horizontal)

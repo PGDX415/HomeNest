@@ -212,6 +212,8 @@ final class Item {
     var value: Double?
     var purchaseDate: Date?
     var expiryDate: Date?
+    var warrantyEndDate: Date?
+    var warrantyNotes: String?
     var category: String?
     var tags: [String] = []
     var photoData: Data?

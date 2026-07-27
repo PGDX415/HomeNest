@@ -16,6 +16,8 @@ struct AddItemSheet: View {
     @State private var value: Double?
     @State private var purchaseDate: Date?
     @State private var expiryDate: Date?
+    @State private var warrantyEndDate: Date?
+    @State private var warrantyNotes = ""
     @State private var category = ""
     @State private var tagsText = ""
     @State private var selectedLocation: StorageLocation?
@@ -48,6 +50,8 @@ struct AddItemSheet: View {
             _value = State(initialValue: existingItem.value)
             _purchaseDate = State(initialValue: existingItem.purchaseDate)
             _expiryDate = State(initialValue: existingItem.expiryDate)
+            _warrantyEndDate = State(initialValue: existingItem.warrantyEndDate)
+            _warrantyNotes = State(initialValue: existingItem.warrantyNotes ?? "")
             _category = State(initialValue: existingItem.category ?? "")
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
@@ -132,6 +136,15 @@ struct AddItemSheet: View {
                         set: { expiryDate = $0 }
                     ), displayedComponents: [.date])
                     .datePickerStyle(.compact)
+
+                    DatePicker("保修截止", selection: Binding(
+                        get: { warrantyEndDate ?? Date() },
+                        set: { warrantyEndDate = $0 }
+                    ), displayedComponents: [.date])
+                    .datePickerStyle(.compact)
+
+                    TextField("保修备注（如延保信息）", text: $warrantyNotes)
+                        .font(.caption)
                 }
                 
                 Section("位置") {
@@ -220,6 +233,8 @@ struct AddItemSheet: View {
                             existingItem.value = value
                             existingItem.purchaseDate = purchaseDate
                             existingItem.expiryDate = expiryDate
+                            existingItem.warrantyEndDate = warrantyEndDate
+                            existingItem.warrantyNotes = warrantyNotes.isEmpty ? nil : warrantyNotes
                             existingItem.status = selectedStatus
                             existingItem.category = category.isEmpty ? nil : category
                             existingItem.tags = tags
@@ -246,6 +261,8 @@ struct AddItemSheet: View {
                                 tags: tags,
                                 photoData: photoData
                             )
+                            newItem.warrantyEndDate = warrantyEndDate
+                            newItem.warrantyNotes = warrantyNotes.isEmpty ? nil : warrantyNotes
                             newItem.familyMember = selectedFamilyMember
                             newItem.status = selectedStatus
 
