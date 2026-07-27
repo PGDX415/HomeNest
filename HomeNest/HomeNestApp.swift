@@ -91,6 +91,10 @@ struct HomeNestApp: App {
                     cleanedCount += 1
                     print("🧹 Cleaned empty icon for Home: \(home.name)")
                 }
+                if home.icon == "box.fill" {
+                    home.icon = "shippingbox.fill"
+                    cleanedCount += 1
+                }
             }
         } catch {
             print("⚠️ Failed to clean Home icons: \(error)")
@@ -106,6 +110,18 @@ struct HomeNestApp: App {
                     location.icon = nil
                     cleanedCount += 1
                     print("🧹 Cleaned empty icon for Location: \(location.name)")
+                }
+                // 修复无效 SF Symbol 名称: box.fill → shippingbox.fill
+                if location.icon == "box.fill" {
+                    location.icon = "shippingbox.fill"
+                    cleanedCount += 1
+                    print("🧹 Fixed invalid icon 'box.fill' for Location: \(location.name)")
+                }
+                // 修复另一个常见无效图标: warehouse.fill → archivebox.fill
+                if location.icon == "warehouse.fill" {
+                    location.icon = "archivebox.fill"
+                    cleanedCount += 1
+                    print("🧹 Fixed invalid icon 'warehouse.fill' for Location: \(location.name)")
                 }
                 
                 // 修复 StorageLocation 的 home 属性
