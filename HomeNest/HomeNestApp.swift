@@ -30,9 +30,8 @@ struct HomeNestApp: App {
         )
 
         do {
-            print("🟢 [Launch] 开始创建 ModelContainer...")
             let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            print("🟢 [Launch] CloudKit ModelContainer 创建成功 ✅")
+            print("☁️ App: CloudKit ModelContainer 创建成功 ✅")
             if FileManager.default.ubiquityIdentityToken != nil {
                 print("☁️ App: iCloud 已登录")
             } else {
