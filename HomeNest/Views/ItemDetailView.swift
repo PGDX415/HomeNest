@@ -22,7 +22,26 @@ struct ItemDetailView: View {
                     maxHeight: 300
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                
+
+                // Receipt photo
+                if let receiptData = item.receiptPhotoData,
+                   let uiImage = UIImage(data: receiptData) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("📄 收据/发票")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 300)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                }
+
                 // Basic info section
                 VStack(alignment: .leading, spacing: 8) {
                     Text(item.name)

@@ -30,6 +30,8 @@ struct AddItemSheet: View {
 
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var photoData: Data?
+    @State private var selectedReceiptItem: PhotosPickerItem?
+    @State private var receiptPhotoData: Data?
 
     // Barcode scanner
     @State private var showingScanner = false
@@ -62,6 +64,7 @@ struct AddItemSheet: View {
             _category = State(initialValue: existingItem.category ?? "")
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
+            _receiptPhotoData = State(initialValue: existingItem.receiptPhotoData)
             _selectedLocation = State(initialValue: existingItem.location)
             _needsRestock = State(initialValue: existingItem.needsRestock)
             _selectedStatus = State(initialValue: existingItem.status)
@@ -221,7 +224,7 @@ struct AddItemSheet: View {
                     }
                 }
 
-                Section("照片") {
+                Section("物品照片") {
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                         if let photoData = photoData,
                            let uiImage = UIImage(data: photoData) {
@@ -237,6 +240,27 @@ struct AddItemSheet: View {
                                 .cornerRadius(12)
                         }
                     }
+                }
+
+                Section("收据/发票") {
+                    PhotosPicker(selection: $selectedReceiptItem, matching: .images) {
+                        if let receiptData = receiptPhotoData,
+                           let uiImage = UIImage(data: receiptData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 200)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            Label("添加收据照片", systemImage: "doc.text.image")
+                                .frame(height: 120)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(12)
+                        }
+                    }
+                    Text("用于保修和保险理赔，请拍摄购买发票或收据")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             .navigationTitle(existingItem == nil ? "添加物品" : "编辑物品")  // Updated title based on mode
@@ -272,6 +296,7 @@ struct AddItemSheet: View {
                             existingItem.category = category.isEmpty ? nil : category
                             existingItem.tags = tags
                             existingItem.photoData = photoData
+                            existingItem.receiptPhotoData = receiptPhotoData
                             existingItem.location = selectedLocation ?? location
                             // Synchronize home property with location's home
                             existingItem.home = (selectedLocation ?? location)?.home
@@ -294,6 +319,7 @@ struct AddItemSheet: View {
                                 tags: tags,
                                 photoData: photoData
                             )
+                            newItem.receiptPhotoData = receiptPhotoData
                             newItem.warrantyEndDate = warrantyEndDate
                             newItem.warrantyNotes = warrantyNotes.isEmpty ? nil : warrantyNotes
                             newItem.lentTo = lentTo.isEmpty ? nil : lentTo
@@ -321,6 +347,17 @@ struct AddItemSheet: View {
                         photoData = compressedData
                     } else {
                         photoData = data
+                    }
+                }
+            }
+            .task(id: selectedReceiptItem) {
+                guard let selectedItem = selectedReceiptItem else { return }
+                if let data = try? await selectedItem.loadTransferable(type: Data.self) {
+                    if let uiImage = UIImage(data: data),
+                       let compressedData = ImageManager.shared.compressImage(uiImage) {
+                        receiptPhotoData = compressedData
+                    } else {
+                        receiptPhotoData = data
                     }
                 }
             }

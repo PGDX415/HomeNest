@@ -221,6 +221,7 @@ final class Item {
     var category: String?
     var tags: [String] = []
     var photoData: Data?
+    var receiptPhotoData: Data?
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
