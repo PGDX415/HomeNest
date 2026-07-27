@@ -22,7 +22,12 @@ struct AddItemSheet: View {
     
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var photoData: Data?
-    
+
+    // Barcode scanner
+    @State private var showingScanner = false
+    @State private var scannedBarcode = ""
+    @State private var isLookingUp = false
+
     // Predefined categories
     private let predefinedCategories = ["家电", "衣物", "书籍", "厨房", "食品", "工具", "装饰", "其他"]
     
@@ -50,8 +55,28 @@ struct AddItemSheet: View {
         NavigationStack {
             Form {
                 Section("基本信息") {
+                    // 条形码扫描按钮
+                    Button(action: { showingScanner = true }) {
+                        HStack {
+                            if isLookingUp {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("正在查询产品信息...")
+                            } else if !scannedBarcode.isEmpty {
+                                Image(systemName: "barcode.viewfinder")
+                                    .foregroundColor(.green)
+                                Text("已扫描: \(scannedBarcode)")
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Image(systemName: "barcode.viewfinder")
+                                Text("扫描条形码")
+                            }
+                        }
+                    }
+                    .disabled(isLookingUp)
+
                     TextField("物品名称*", text: $name)
-                    
+
                     Stepper("数量: \(quantity)", value: $quantity, in: 1...999)
                     
                     TextField("描述", text: $descriptionText)
@@ -204,7 +229,7 @@ struct AddItemSheet: View {
             }
             .task(id: selectedPhotoItem) {
                 guard let selectedItem = selectedPhotoItem else { return }
-                
+
                 // Load the selected photo
                 if let data = try? await selectedItem.loadTransferable(type: Data.self) {
                     // Use ImageManager for compression
@@ -215,6 +240,106 @@ struct AddItemSheet: View {
                         photoData = data
                     }
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showingScanner) {
+            BarcodeScanSheetView(
+                onScanResult: { barcode in
+                    scannedBarcode = barcode
+                    showingScanner = false
+                    Task {
+                        await lookupProduct(barcode: barcode)
+                    }
+                },
+                onCancel: {
+                    showingScanner = false
+                }
+            )
+        }
+    }
+
+    /// 查询条形码对应的产品信息并填入表单
+    private func lookupProduct(barcode: String) async {
+        isLookingUp = true
+        defer { isLookingUp = false }
+
+        print("🔍 开始查询条码: \(barcode)")
+
+        // 解码条码前缀，获取产地信息
+        let barcodeInfo = ProductLookupService.shared.decodeBarcode(barcode)
+        print("🔍 条码产地: \(barcodeInfo.country)")
+
+        guard let info = await ProductLookupService.shared.lookup(barcode: barcode) else {
+            print("🔍 未查到产品信息，条码号: \(barcode)")
+            // 回退：根据产地给出分类提示
+            if let hint = barcodeInfo.categoryHint {
+                category = hint
+                print("🔍 根据产地自动填入分类: \(hint)")
+            }
+            return
+        }
+
+        guard let productName = info.name, !productName.isEmpty else {
+            print("🔍 产品名为空，条码号: \(barcode)")
+            if let hint = barcodeInfo.categoryHint {
+                category = hint
+            }
+            return
+        }
+
+        name = productName
+        if let brand = info.brand, !brand.isEmpty {
+            name = "\(brand) \(productName)"
+        }
+        if let mappedCategory = ProductLookupService.shared.mapToHomeNestCategory(info.category) {
+            category = mappedCategory
+        } else if let hint = barcodeInfo.categoryHint {
+            category = hint
+        }
+        print("🔍 自动填入: 名称=\(name), 分类=\(category), 产地=\(barcodeInfo.country)")
+    }
+}
+
+// 扫描条形码的全屏 Sheet
+struct BarcodeScanSheetView: View {
+    let onScanResult: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var isScanning = true
+
+    var body: some View {
+        ZStack {
+            BarcodeScannerView(onScan: { code in
+                isScanning = false
+                onScanResult(code)
+            }, isScanning: $isScanning)
+            .ignoresSafeArea()
+
+            VStack {
+                HStack {
+                    Button(action: {
+                        isScanning = false
+                        onCancel()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(.white)
+                            .shadow(radius: 4)
+                    }
+                    .padding(.leading, 20)
+                    .padding(.top, 60)
+
+                    Spacer()
+                }
+                Spacer()
+
+                Text("将条形码对准扫描框")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.black.opacity(0.5))
+                    .cornerRadius(8)
+                    .padding(.bottom, 40)
             }
         }
     }

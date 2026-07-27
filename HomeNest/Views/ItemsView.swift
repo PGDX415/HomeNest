@@ -13,6 +13,10 @@ struct ItemsView: View {
     @State private var showExpiringSoon = false
     @State private var isBatchMode = false
     @State private var selectedItems: Set<PersistentIdentifier> = []
+    @State private var showingBatchMoveSheet = false
+    @State private var showingBatchCategorySheet = false
+    @State private var showingBatchTagAlert = false
+    @State private var batchTagText = ""
     
     // Predefined categories matching AddItemSheet
     private let presetCategories = [
@@ -264,8 +268,28 @@ struct ItemsView: View {
                             }
                             
                             Divider()
-                            
+
                             if !selectedItems.isEmpty {
+                                Button(action: {
+                                    showingBatchMoveSheet = true
+                                }) {
+                                    Label("移动到...", systemImage: "arrow.right.square")
+                                }
+
+                                Button(action: {
+                                    showingBatchCategorySheet = true
+                                }) {
+                                    Label("修改分类", systemImage: "tag")
+                                }
+
+                                Button(action: {
+                                    showingBatchTagAlert = true
+                                }) {
+                                    Label("添加标签", systemImage: "number")
+                                }
+
+                                Divider()
+
                                 Button(role: .destructive) {
                                     prepareBatchDeletion()
                                 } label: {
@@ -338,11 +362,39 @@ struct ItemsView: View {
             .alert("🔒 安全验证", isPresented: $showingBiometricAlert) {
                 Button("取消", role: .cancel) {
                     showingBiometricAlert = false
-                    // Clear batch deletion state if cancelled
                     itemsToDelete = []
                 }
             } message: {
                 Text(biometricError.isEmpty ? "请使用 Face ID 或 Touch ID 验证身份以继续删除操作。" : biometricError)
+            }
+            // 批量移动 Sheet
+            .sheet(isPresented: $showingBatchMoveSheet) {
+                BatchMoveView(
+                    itemIDs: selectedItems,
+                    onComplete: { exitBatchMode() }
+                )
+            }
+            // 批量修改分类 Sheet
+            .sheet(isPresented: $showingBatchCategorySheet) {
+                BatchCategoryView(
+                    itemIDs: selectedItems,
+                    onComplete: { exitBatchMode() }
+                )
+            }
+            // 批量添加标签 Alert
+            .alert("添加标签", isPresented: $showingBatchTagAlert) {
+                TextField("输入标签（逗号分隔）", text: $batchTagText)
+                    .textInputAutocapitalization(.never)
+                Button("取消", role: .cancel) {
+                    batchTagText = ""
+                }
+                Button("确定") {
+                    batchAddTags(batchTagText)
+                    batchTagText = ""
+                    exitBatchMode()
+                }
+            } message: {
+                Text("为 \(selectedItems.count) 个选中物品添加标签")
             }
         }
     }
@@ -532,6 +584,152 @@ struct ItemsView: View {
         }
         
         showingBiometricAlert = true
+    }
+
+    // MARK: - Batch Operations
+
+    /// 批量添加标签
+    private func batchAddTags(_ tagsText: String) {
+        let targets = filteredItems.filter { selectedItems.contains($0.persistentModelID) }
+        let newTags = tagsText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        guard !newTags.isEmpty else { return }
+
+        for item in targets {
+            var existing = Set(item.tags)
+            newTags.forEach { existing.insert($0) }
+            item.tags = Array(existing)
+            item.updatedAt = Date()
+        }
+        try? modelContext.save()
+    }
+}
+
+// MARK: - 批量移动 View
+
+struct BatchMoveView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    let itemIDs: Set<PersistentIdentifier>
+    let onComplete: () -> Void
+
+    @Query(sort: \StorageLocation.name) private var allLocations: [StorageLocation]
+    @State private var selectedLocation: StorageLocation?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(allLocations, id: \.persistentModelID) { location in
+                    Button(action: { selectedLocation = location }) {
+                        HStack {
+                            Image(systemName: "folder.fill")
+                            Text(location.name)
+                            Spacer()
+                            if selectedLocation?.persistentModelID == location.persistentModelID {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("移动到...")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("移动") {
+                        moveItems()
+                        onComplete()
+                        dismiss()
+                    }
+                    .disabled(selectedLocation == nil)
+                }
+            }
+        }
+    }
+
+    private func moveItems() {
+        guard let target = selectedLocation else { return }
+        let descriptor = FetchDescriptor<Item>()
+        guard let allItems = try? modelContext.fetch(descriptor) else { return }
+
+        for item in allItems where itemIDs.contains(item.persistentModelID) {
+            item.location = target
+            item.home = target.home
+            item.updatedAt = Date()
+        }
+        try? modelContext.save()
+    }
+}
+
+// MARK: - 批量修改分类 View
+
+struct BatchCategoryView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    let itemIDs: Set<PersistentIdentifier>
+    let onComplete: () -> Void
+
+    private let categories = [
+        "家电电器", "厨房用品", "衣物鞋帽", "书籍文具",
+        "食品饮品", "清洁用品", "医药保健", "装饰摆件",
+        "工具设备", "其他杂物"
+    ]
+
+    @State private var selectedCategory: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Button(action: { selectedCategory = nil }) {
+                    HStack {
+                        Text("清除分类")
+                        Spacer()
+                        if selectedCategory == nil {
+                            Image(systemName: "checkmark").foregroundColor(.blue)
+                        }
+                    }
+                }
+                ForEach(categories, id: \.self) { cat in
+                    Button(action: { selectedCategory = cat }) {
+                        HStack {
+                            Text(cat)
+                            Spacer()
+                            if selectedCategory == cat {
+                                Image(systemName: "checkmark").foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("修改分类")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("确定") {
+                        changeCategory()
+                        onComplete()
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func changeCategory() {
+        let descriptor = FetchDescriptor<Item>()
+        guard let allItems = try? modelContext.fetch(descriptor) else { return }
+
+        for item in allItems where itemIDs.contains(item.persistentModelID) {
+            item.category = selectedCategory
+            item.updatedAt = Date()
+        }
+        try? modelContext.save()
     }
 }
 

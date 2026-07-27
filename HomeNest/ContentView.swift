@@ -11,7 +11,8 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allHomes: [Home]
-    
+    @Query private var allItems: [Item]
+
     @State private var selectedTab = 0  // 首页默认显示「场所」
     
     var body: some View {
@@ -57,6 +58,19 @@ struct ContentView: View {
             if newCount > 0 && selectedTab == 1 {
                 selectedTab = 0
             }
+        }
+        .onChange(of: allItems.count) { _ in
+            // 物品增删时刷新到期通知
+            ExpiryNotificationManager.shared.scheduleExpiryNotifications(for: allItems)
+        }
+        .task {
+            // 首次启动时请求权限并安排通知
+            await ExpiryNotificationManager.shared.requestAuthorization()
+            ExpiryNotificationManager.shared.scheduleExpiryNotifications(for: allItems)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // 从后台回来时刷新（CloudKit 可能同步了新数据）
+            ExpiryNotificationManager.shared.scheduleExpiryNotifications(for: allItems)
         }
     }
 }
