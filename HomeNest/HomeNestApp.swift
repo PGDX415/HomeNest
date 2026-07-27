@@ -16,6 +16,7 @@ struct HomeNestApp: App {
             StorageLocation.self,
             Home.self,
             UserProfile.self,
+            FamilyMember.self,
         ])
 
         let cloudKitContainerID = "iCloud.com.gongdexin.paul.HomeNest"

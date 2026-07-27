@@ -17,6 +17,9 @@ struct ItemsView: View {
     @State private var showingBatchCategorySheet = false
     @State private var showingBatchTagAlert = false
     @State private var batchTagText = ""
+    @State private var selectedFamilyMember: FamilyMember?
+
+    @Query(sort: \FamilyMember.name) private var familyMembers: [FamilyMember]
     
     // Predefined categories matching AddItemSheet
     private let presetCategories = [
@@ -130,6 +133,13 @@ struct ItemsView: View {
                     return expiryDate >= today && expiryDate <= nextMonth
                 }
                 return false
+            }
+        }
+
+        // Apply family member filter
+        if let selectedMember = selectedFamilyMember {
+            filtered = filtered.filter { item in
+                item.familyMember?.persistentModelID == selectedMember.persistentModelID
             }
         }
         
@@ -331,6 +341,25 @@ struct ItemsView: View {
                                     }
                                 }
                                 
+                                // Family member filter
+                                if !familyMembers.isEmpty {
+                                    Section("家庭成员") {
+                                        Button(action: {
+                                            selectedFamilyMember = nil
+                                        }) {
+                                            Label("全部", systemImage: selectedFamilyMember == nil ? "checkmark" : "")
+                                        }
+
+                                        ForEach(familyMembers, id: \.persistentModelID) { member in
+                                            Button(action: {
+                                                selectedFamilyMember = selectedFamilyMember?.persistentModelID == member.persistentModelID ? nil : member
+                                            }) {
+                                                Label("\(member.emoji) \(member.name)", systemImage: selectedFamilyMember?.persistentModelID == member.persistentModelID ? "checkmark" : "")
+                                            }
+                                        }
+                                    }
+                                }
+
                                 // Expiring soon filter
                                 Section {
                                     Button(action: {

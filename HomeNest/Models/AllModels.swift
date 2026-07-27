@@ -193,6 +193,10 @@ final class Item {
     @Relationship(inverse: \Home.items)
     var home: Home?
 
+    // 归属家庭成员
+    @Relationship
+    var familyMember: FamilyMember?
+
     init(name: String, quantity: Int = 1, location: StorageLocation? = nil,
          details: String? = nil, value: Double? = nil,
          purchaseDate: Date? = nil, expiryDate: Date? = nil,
@@ -242,5 +246,27 @@ final class UserProfile {
     func updateAvatar(_ imageData: Data?) {
         self.avatarData = imageData
         self.updatedAt = Date()
+    }
+}
+
+// MARK: - FamilyMember
+
+@Model
+final class FamilyMember {
+    var name: String = ""
+    var emoji: String = "👤"
+    var colorName: String = "blue"
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+
+    // 关联到此成员的所有物品
+    @Relationship(deleteRule: .nullify, inverse: \Item.familyMember)
+    var items: [Item]?
+
+    init(name: String, emoji: String = "👤", colorName: String = "blue") {
+        self.name = name
+        self.emoji = emoji
+        self.colorName = colorName
+        self.items = []
     }
 }

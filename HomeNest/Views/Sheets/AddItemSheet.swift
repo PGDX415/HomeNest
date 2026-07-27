@@ -19,7 +19,8 @@ struct AddItemSheet: View {
     @State private var category = ""
     @State private var tagsText = ""
     @State private var selectedLocation: StorageLocation?
-    
+    @State private var selectedFamilyMember: FamilyMember?
+
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var photoData: Data?
 
@@ -27,6 +28,8 @@ struct AddItemSheet: View {
     @State private var showingScanner = false
     @State private var scannedBarcode = ""
     @State private var isLookingUp = false
+
+    @Query(sort: \FamilyMember.name) private var familyMembers: [FamilyMember]
 
     // Predefined categories
     private let predefinedCategories = ["家电", "衣物", "书籍", "厨房", "食品", "工具", "装饰", "其他"]
@@ -153,7 +156,18 @@ struct AddItemSheet: View {
                         }
                     }
                 }
-                
+
+                if !familyMembers.isEmpty {
+                    Section("归属") {
+                        Picker("家庭成员", selection: $selectedFamilyMember) {
+                            Text("无").tag(FamilyMember?.none)
+                            ForEach(familyMembers, id: \.persistentModelID) { member in
+                                Text("\(member.emoji) \(member.name)").tag(member as FamilyMember?)
+                            }
+                        }
+                    }
+                }
+
                 Section("照片") {
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                         if let photoData = photoData,
@@ -201,6 +215,7 @@ struct AddItemSheet: View {
                             existingItem.location = selectedLocation ?? location
                             // Synchronize home property with location's home
                             existingItem.home = (selectedLocation ?? location)?.home
+                            existingItem.familyMember = selectedFamilyMember
                             existingItem.updatedAt = Date()
                             
                             // Call onSave with the existing (now updated) item
@@ -219,7 +234,8 @@ struct AddItemSheet: View {
                                 tags: tags,
                                 photoData: photoData
                             )
-                            
+                            newItem.familyMember = selectedFamilyMember
+
                             onSave(newItem)
                         }
                         dismiss()

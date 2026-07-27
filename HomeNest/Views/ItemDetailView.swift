@@ -73,6 +73,19 @@ struct ItemDetailView: View {
                     }
                 }
                 
+                // Family member section
+                if let familyMember = item.familyMember {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("归属")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        HStack {
+                            Text(familyMember.emoji)
+                            Text(familyMember.name)
+                        }
+                    }
+                }
+
                 // Value section
                 if let value = item.value {
                     VStack(alignment: .leading, spacing: 4) {

@@ -15,6 +15,7 @@ struct ProfileView: View {
     @EnvironmentObject private var cloudKitSyncMonitor: CloudKitSyncMonitor
     @Query private var allHomes: [Home]
     @Query(sort: \UserProfile.updatedAt, order: .reverse) private var userProfiles: [UserProfile]
+    @Query(sort: \FamilyMember.name) private var familyMembers: [FamilyMember]
 
     /// 获取当前用户配置（最新的一条）
     private var currentProfile: UserProfile? {
@@ -24,6 +25,7 @@ struct ProfileView: View {
     // 应用版本信息
     @State private var appVersion: String = ""
     @State private var showingEditSheet = false
+    @State private var showingAddMemberSheet = false
     
     // 应用锁定设置
     @State private var appLockEnabled: Bool = false
@@ -88,7 +90,28 @@ struct ProfileView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            
+
+            // 家人管理区域
+            Section("家人共享") {
+                ForEach(familyMembers, id: \.persistentModelID) { member in
+                    HStack {
+                        Text(member.emoji)
+                            .font(.title2)
+                        Text(member.name)
+                            .font(.subheadline)
+                        Spacer()
+                        Text("\(member.items?.count ?? 0) 件")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .onDelete(perform: deleteFamilyMembers)
+
+                Button(action: { showingAddMemberSheet = true }) {
+                    Label("添加家人", systemImage: "person.badge.plus")
+                }
+            }
+
             // iCloud 同步状态区域
             Section("iCloud 云同步") {
                 // 同步状态行
@@ -220,6 +243,9 @@ struct ProfileView: View {
         .onChange(of: userProfiles.count) { _ in
             ensureUserProfileExists()
         }
+        .sheet(isPresented: $showingAddMemberSheet) {
+            AddFamilyMemberSheet()
+        }
         .sheet(isPresented: $showingEditSheet) {
             EditUserProfileView(userProfile: currentProfile)
         }
@@ -262,6 +288,13 @@ struct ProfileView: View {
         }
     }
     
+    private func deleteFamilyMembers(at offsets: IndexSet) {
+        for index in offsets {
+            modelContext.delete(familyMembers[index])
+        }
+        try? modelContext.save()
+    }
+
     // 获取总物品数量的辅助方法
     private func getTotalItemCount() -> Int {
         // 使用独立查询获取所有物品总数
@@ -676,6 +709,72 @@ struct AboutAppView: View {
     private func loadAppVersion() {
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             appVersion = version
+        }
+    }
+}
+
+// MARK: - 添加家人 Sheet
+
+struct AddFamilyMemberSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var name = ""
+    @State private var emoji = "👤"
+    @State private var colorName = "blue"
+
+    private let emojis = ["👨", "👩", "👴", "👵", "👦", "👧", "👶", "🧑", "👤"]
+    private let colors = ["blue", "green", "orange", "red", "purple", "indigo", "teal", "pink", "brown"]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("基本信息") {
+                    TextField("姓名", text: $name)
+
+                    Picker("表情", selection: $emoji) {
+                        ForEach(emojis, id: \.self) { e in
+                            Text(e).tag(e)
+                        }
+                    }
+
+                    Picker("颜色", selection: $colorName) {
+                        ForEach(colors, id: \.self) { c in
+                            Label(c, systemImage: "circle.fill")
+                                .tag(c)
+                        }
+                    }
+                }
+
+                Section {
+                    HStack {
+                        Spacer()
+                        Text(emoji)
+                            .font(.system(size: 60))
+                        Spacer()
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("添加家人")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("添加") {
+                        let member = FamilyMember(
+                            name: name.isEmpty ? "新成员" : name,
+                            emoji: emoji,
+                            colorName: colorName
+                        )
+                        modelContext.insert(member)
+                        try? modelContext.save()
+                        dismiss()
+                    }
+                    .disabled(name.isEmpty)
+                }
+            }
         }
     }
 }
