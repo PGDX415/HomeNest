@@ -215,8 +215,8 @@ final class ExpiryNotificationManager {
         print("🔔 scheduleAllNotifications: 开始, items=\(items.count)")
         scheduleExpiryNotifications(for: items)
         print("🔔 scheduleAllNotifications: 保质期完成")
-        // 暂时注释掉新通知，定位 crash
-        // scheduleWarrantyNotifications(for: items)
+        scheduleWarrantyNotifications(for: items)
+        print("🔔 scheduleAllNotifications: 保修完成")
         // scheduleLendingNotifications(for: items)
         print("🔔 scheduleAllNotifications: 完成")
     }
