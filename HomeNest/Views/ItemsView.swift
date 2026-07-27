@@ -337,32 +337,32 @@ struct ItemsView: View {
                                     Button(action: {
                                         selectedCategory = nil
                                     }) {
-                                        Label("全部", systemImage: selectedCategory == nil ? "checkmark" : "")
+                                        Label("全部", systemImage: selectedCategory == nil ? "checkmark" : "circle")
                                     }
-                                    
+
                                     ForEach(categories, id: \.self) { category in
                                         Button(action: {
                                             selectedCategory = category == selectedCategory ? nil : category
                                         }) {
-                                            Label(category, systemImage: category == selectedCategory ? "checkmark" : "")
+                                            Label(category, systemImage: category == selectedCategory ? "checkmark" : "circle")
                                         }
                                     }
                                 }
-                                
+
                                 // Family member filter
                                 if !familyMembers.isEmpty {
                                     Section("家庭成员") {
                                         Button(action: {
                                             selectedFamilyMember = nil
                                         }) {
-                                            Label("全部", systemImage: selectedFamilyMember == nil ? "checkmark" : "")
+                                            Label("全部", systemImage: selectedFamilyMember == nil ? "checkmark" : "circle")
                                         }
 
                                         ForEach(familyMembers, id: \.persistentModelID) { member in
                                             Button(action: {
                                                 selectedFamilyMember = selectedFamilyMember?.persistentModelID == member.persistentModelID ? nil : member
                                             }) {
-                                                Label("\(member.emoji) \(member.name)", systemImage: selectedFamilyMember?.persistentModelID == member.persistentModelID ? "checkmark" : "")
+                                                Label("\(member.emoji) \(member.name)", systemImage: selectedFamilyMember?.persistentModelID == member.persistentModelID ? "checkmark" : "circle")
                                             }
                                         }
                                     }
@@ -373,7 +373,7 @@ struct ItemsView: View {
                                     Button(action: {
                                         selectedStatus = nil
                                     }) {
-                                        Label("全部状态", systemImage: selectedStatus == nil ? "checkmark" : "")
+                                        Label("全部状态", systemImage: selectedStatus == nil ? "checkmark" : "circle")
                                     }
 
                                     ForEach(ItemStatus.allCases, id: \.self) { status in
@@ -390,7 +390,7 @@ struct ItemsView: View {
                                     Button(action: {
                                         showExpiringSoon.toggle()
                                     }) {
-                                        Label("即将过期", systemImage: showExpiringSoon ? "checkmark" : "")
+                                        Label("即将过期", systemImage: showExpiringSoon ? "checkmark" : "clock.arrow.circlepath")
                                     }
                                 }
                                 
