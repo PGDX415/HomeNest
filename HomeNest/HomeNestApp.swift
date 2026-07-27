@@ -62,7 +62,7 @@ struct HomeNestApp: App {
                 if appLockManager.shouldShowLockScreen {
                     AppLockView()
                 } else {
-                    ContentView()
+                    SplashView()
                 }
             }
             .environmentObject(appLockManager)

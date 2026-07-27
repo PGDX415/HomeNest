@@ -120,7 +120,7 @@ struct PlacesView: View {
             }
             .onDelete(perform: deletePlaces)
         }
-        .navigationTitle("场所")
+        .navigationTitle("家物管")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {

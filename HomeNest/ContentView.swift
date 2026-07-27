@@ -12,7 +12,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allHomes: [Home]
     
-    @State private var selectedTab = 1 // Default to 统计 tab as per specification
+    @State private var selectedTab = 0  // 首页默认显示「场所」
     
     var body: some View {
         TabView(selection: $selectedTab) {

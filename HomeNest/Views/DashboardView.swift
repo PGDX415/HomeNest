@@ -35,7 +35,7 @@ struct EmptyDashboardView: View {
                         .fill(Color.secondary.opacity(0.1))
                 )
             
-            Text("欢迎使用家物管")
+            Text("欢迎使用 HomeNest")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
@@ -167,7 +167,7 @@ struct StatisticsDashboardView: View {
             }
             .padding(.bottom)
         }
-        .navigationTitle("家物管")
+        .navigationTitle("统计概览")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
