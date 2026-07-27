@@ -13,6 +13,36 @@ enum LocationType: String, Codable, CaseIterable {
     case custom = "自定义"
 }
 
+// MARK: - ItemStatus
+
+enum ItemStatus: String, Codable, CaseIterable {
+    case active = "在用"
+    case idle = "闲置"
+    case lent = "借出"
+    case sold = "已售"
+    case disposed = "已丢弃"
+
+    var icon: String {
+        switch self {
+        case .active: return "checkmark.circle.fill"
+        case .idle: return "circle.slash"
+        case .lent: return "arrowshape.turn.up.right"
+        case .sold: return "tag.fill"
+        case .disposed: return "trash"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .active: return .green
+        case .idle: return .orange
+        case .lent: return .blue
+        case .sold: return .gray
+        case .disposed: return .red
+        }
+    }
+}
+
 // MARK: - Home (declared first — no inverse: needed, others point back here)
 
 @Model
@@ -177,6 +207,7 @@ final class StorageLocation {
 final class Item {
     var name: String = ""
     var quantity: Int = 1
+    var status: ItemStatus = ItemStatus.active
     var details: String?
     var value: Double?
     var purchaseDate: Date?

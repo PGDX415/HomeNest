@@ -32,9 +32,18 @@ struct ItemDetailView: View {
                     HStack {
                         Text("数量: \(item.quantity)")
                             .font(.title2)
-                        
+
                         Spacer()
-                        
+
+                        Text(item.status.rawValue)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(item.status.color.opacity(0.1))
+                            .foregroundColor(item.status.color)
+                            .cornerRadius(8)
+
                         if let category = item.category {
                             Text(category)
                                 .padding(.horizontal, 12)

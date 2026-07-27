@@ -20,6 +20,7 @@ struct AddItemSheet: View {
     @State private var tagsText = ""
     @State private var selectedLocation: StorageLocation?
     @State private var selectedFamilyMember: FamilyMember?
+    @State private var selectedStatus: ItemStatus = .active
 
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var photoData: Data?
@@ -51,6 +52,7 @@ struct AddItemSheet: View {
             _tagsText = State(initialValue: existingItem.tags.joined(separator: ", "))
             _photoData = State(initialValue: existingItem.photoData)
             _selectedLocation = State(initialValue: existingItem.location)
+            _selectedStatus = State(initialValue: existingItem.status)
         }
     }
     
@@ -85,6 +87,15 @@ struct AddItemSheet: View {
                     TextField("描述", text: $descriptionText)
                 }
                 
+                Section("状态") {
+                    Picker("物品状态", selection: $selectedStatus) {
+                        ForEach(ItemStatus.allCases, id: \.self) { status in
+                            Label(status.rawValue, systemImage: status.icon)
+                                .tag(status)
+                        }
+                    }
+                }
+
                 Section("分类与标签") {
                     Picker("类别", selection: $category) {
                         Text("无").tag("")
@@ -209,6 +220,7 @@ struct AddItemSheet: View {
                             existingItem.value = value
                             existingItem.purchaseDate = purchaseDate
                             existingItem.expiryDate = expiryDate
+                            existingItem.status = selectedStatus
                             existingItem.category = category.isEmpty ? nil : category
                             existingItem.tags = tags
                             existingItem.photoData = photoData
@@ -235,6 +247,7 @@ struct AddItemSheet: View {
                                 photoData: photoData
                             )
                             newItem.familyMember = selectedFamilyMember
+                            newItem.status = selectedStatus
 
                             onSave(newItem)
                         }

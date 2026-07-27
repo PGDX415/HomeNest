@@ -98,7 +98,7 @@ struct StatisticsDashboardView: View {
     var expiringSoonItems: [Item] {
         let today = Date()
         let nextMonth = Calendar.current.date(byAdding: .month, value: 1, to: today)!
-        
+
         return allItems.filter { item in
             if let expiryDate = item.expiryDate {
                 return expiryDate >= today && expiryDate <= nextMonth
@@ -106,6 +106,10 @@ struct StatisticsDashboardView: View {
             return false
         }
     }
+
+    // Status counts
+    var idleCount: Int { allItems.filter { $0.status == .idle }.count }
+    var lentCount: Int { allItems.filter { $0.status == .lent }.count }
     
     var body: some View {
         ScrollView {
@@ -129,6 +133,18 @@ struct StatisticsDashboardView: View {
                     }
                     NavigationLink(destination: ExpiringItemsView()) {
                         DashboardCard(title: "即将过期", count: expiringSoonItems.count, icon: "clock.arrow.circlepath", color: .red)
+                    }
+
+                    if idleCount > 0 {
+                        NavigationLink(destination: ItemsView()) {
+                            DashboardCard(title: "闲置物品", count: idleCount, icon: "circle.slash", color: .orange)
+                        }
+                    }
+
+                    if lentCount > 0 {
+                        NavigationLink(destination: ItemsView()) {
+                            DashboardCard(title: "借出物品", count: lentCount, icon: "arrowshape.turn.up.right", color: .blue)
+                        }
                     }
                 }
                 .padding(.horizontal)

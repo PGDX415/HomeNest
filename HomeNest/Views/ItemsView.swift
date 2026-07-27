@@ -18,6 +18,7 @@ struct ItemsView: View {
     @State private var showingBatchTagAlert = false
     @State private var batchTagText = ""
     @State private var selectedFamilyMember: FamilyMember?
+    @State private var selectedStatus: ItemStatus?
 
     @Query(sort: \FamilyMember.name) private var familyMembers: [FamilyMember]
     
@@ -140,6 +141,13 @@ struct ItemsView: View {
         if let selectedMember = selectedFamilyMember {
             filtered = filtered.filter { item in
                 item.familyMember?.persistentModelID == selectedMember.persistentModelID
+            }
+        }
+
+        // Apply status filter
+        if let status = selectedStatus {
+            filtered = filtered.filter { item in
+                item.status == status
             }
         }
         
@@ -360,6 +368,23 @@ struct ItemsView: View {
                                     }
                                 }
 
+                                // Status filter
+                                Section("物品状态") {
+                                    Button(action: {
+                                        selectedStatus = nil
+                                    }) {
+                                        Label("全部状态", systemImage: selectedStatus == nil ? "checkmark" : "")
+                                    }
+
+                                    ForEach(ItemStatus.allCases, id: \.self) { status in
+                                        Button(action: {
+                                            selectedStatus = selectedStatus == status ? nil : status
+                                        }) {
+                                            Label(status.rawValue, systemImage: selectedStatus == status ? "checkmark" : status.icon)
+                                        }
+                                    }
+                                }
+
                                 // Expiring soon filter
                                 Section {
                                     Button(action: {
@@ -436,12 +461,18 @@ struct ItemsView: View {
                     .font(.headline)
                 
                 HStack {
+                    if item.status != .active {
+                        Text("• \(item.status.rawValue)")
+                            .font(.caption)
+                            .foregroundColor(item.status.color)
+                    }
+
                     if let location = item.location {
-                        Text(location.name)
+                        Text("• \(location.name)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    
+
                     if let category = item.category {
                         Text("• \(category)")
                             .font(.caption)
